@@ -2,6 +2,7 @@ use axum::{routing::get, Router};
 use listenfd::ListenFd;
 use tokio::net::TcpListener;
 
+mod hello_world;
 use hello_world::handler;
 
 #[tokio::main]
