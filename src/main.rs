@@ -1,6 +1,8 @@
-use axum::{response::Html, routing::get, Router};
+use axum::{routing::get, Router};
 use listenfd::ListenFd;
 use tokio::net::TcpListener;
+
+use hello_world::handler;
 
 #[tokio::main]
 async fn main() {
@@ -23,6 +25,3 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
-async fn handler() -> Html<&'static str> {
-    Html("<h1>Hello, World! MOTHER FUCKKERRRR</h1>")
-}
