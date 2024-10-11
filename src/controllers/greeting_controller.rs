@@ -7,7 +7,7 @@ pub fn router() -> Router {
 }
 
 async fn hello() -> Html<&'static str> {
-    Html("<h1>Hello, World! MOTHER FUCKKERRRR</h1>")
+    Html("<h1>Hello, World! MOTHER FUCKKERRRR</h1><img src='https://placecats.com/4000/4000' />")
 }
 
 async fn good_bye() -> Html<&'static str> {

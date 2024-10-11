@@ -2,13 +2,16 @@ use axum::Router;
 use listenfd::ListenFd;
 use tokio::net::TcpListener;
 
+mod objects;
 mod controllers;
 use crate::controllers::greeting_controller;
+use crate::controllers::user_controller;
 
 #[tokio::main]
 async fn main() {
     let app = Router::new()
-        .merge(greeting_controller::router());
+        .merge(greeting_controller::router())
+        .merge(user_controller::router());
 
     // create listener
     let listener = create_listener().await;
