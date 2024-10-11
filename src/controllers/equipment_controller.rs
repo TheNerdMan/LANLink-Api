@@ -20,7 +20,7 @@ async fn hire(Path(id): Path<u32>) -> (StatusCode, Json<HireEquipment>) {
             name: "Big wire".parse().unwrap()
         }
     };
-    (StatusCode::FOUND, Json(rsp))
+    (StatusCode::OK, Json(rsp))
 }
 
 async fn hire_by_name(Path(equipment_name): Path<String>) -> (StatusCode, Json<HireEquipment>) {
@@ -33,5 +33,5 @@ async fn hire_by_name(Path(equipment_name): Path<String>) -> (StatusCode, Json<H
             name: equipment_name
         }
     };
-    (StatusCode::FOUND, Json(rsp))
+    (StatusCode::OK, Json(rsp))
 }
