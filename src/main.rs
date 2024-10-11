@@ -1,19 +1,14 @@
-use axum::{routing::get, Router};
+use axum::Router;
 use listenfd::ListenFd;
 use tokio::net::TcpListener;
 
-mod hello_world;
-use hello_world::handler as hello_handler;
-
-mod good_bye;
-use good_bye::handler as good_bye_handler;
+mod controllers;
+use crate::controllers::greeting_controller;
 
 #[tokio::main]
 async fn main() {
-    // build our application with a route
     let app = Router::new()
-        .route("/", get(hello_handler))
-        .route("/good-bye", get(good_bye_handler));
+        .merge(greeting_controller::router());
 
     // create listener
     let listener = create_listener().await;
