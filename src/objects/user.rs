@@ -1,6 +1,6 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct User{
     pub username: String,
     pub discord: String,
@@ -16,6 +16,16 @@ impl User{
             discord: String::new(),
             steam: String::new(),
             strike_count: 0
+        }
+    }
+    pub fn is_empty(&self) -> bool{
+        if self.username == String::new()
+        && self.discord == String::new()
+        && self.steam == String::new()
+        && self.strike_count == 0{
+            return true;
+        }else{
+            return false;
         }
     }
 }

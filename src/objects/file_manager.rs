@@ -1,5 +1,7 @@
-use std::fs::{create_dir_all, File, OpenOptions};
+use std::fs::{self, create_dir_all, File, OpenOptions};
+use std::io::{BufReader, Read};
 use std::path::Path;
+use axum::extract::rejection::MatchedPathRejection;
 use axum::http::StatusCode;
 use serde_json::to_writer;
 
@@ -31,4 +33,28 @@ pub fn save_user(user: &User) -> StatusCode{
     }
     
     StatusCode::OK
+}
+
+pub fn load_user(username: &String) -> User{
+    let accounts_path = format!("{}/accounts", DATA_FOLDER);
+    if !Path::new(&accounts_path).exists() {
+        create_dir_all(&accounts_path).expect("Failed to create accounts folder");
+    }
+
+
+    let file_path = format!("{0}/accounts/{1}.json", &DATA_FOLDER, &username);
+
+    if !Path::new(&file_path).exists(){
+        return User::new();
+    }
+    
+    let json = match fs::read_to_string(&file_path){
+        Ok(j) => j,
+        Err(_) => "".to_string(),
+    };
+
+
+    let user: User = serde_json::from_str(json.as_str()).unwrap();
+    user
+
 }
