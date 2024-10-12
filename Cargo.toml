@@ -4,6 +4,19 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+## API FRAMEWORK
 axum = { version = "0.7.7", features = ["macros"] }
 listenfd = "1.0.1"
 tokio =  { version = "1.40.0",  features = ["rt", "rt-multi-thread", "macros"] }
+serde = { version = "1.0.210", features = ["derive"] }
+
+## DATABASE ORM
+diesel = { version = "2.2.0", features = ["postgres"] }
+# build libpq and openssl as part of the build process
+# uncomment these lines if you run into setup issues
+# pq-sys = { version = "0.6", features = ["bundled"] }
+# openssl-sys = { version = "0.9.100", features = ["vendored"] }
+
+## MISC
+dotenvy = "0.15"
+uuid = { version = "1.10.0", features = ["v4", "serde"] }
