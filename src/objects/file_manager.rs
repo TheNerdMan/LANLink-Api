@@ -1,7 +1,5 @@
-use std::fs::{self, create_dir_all, File, OpenOptions};
-use std::io::{BufReader, Read};
+use std::fs::{self, create_dir_all, OpenOptions};
 use std::path::Path;
-use axum::extract::rejection::MatchedPathRejection;
 use axum::http::StatusCode;
 use serde_json::to_writer;
 
@@ -47,7 +45,7 @@ pub fn load_user(username: &String) -> User{
     if !Path::new(&file_path).exists(){
         return User::new();
     }
-    
+
     let json = match fs::read_to_string(&file_path){
         Ok(j) => j,
         Err(_) => "".to_string(),
