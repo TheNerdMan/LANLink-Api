@@ -3,3 +3,4 @@ workingdir
 Cargo.lock
 .DS_Store
 /.idea/aws.xml
+.env
