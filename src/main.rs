@@ -9,6 +9,7 @@ mod schema;
 mod core;
 
 use crate::features::greeting::greeting_controller;
+use crate::features::user::controllers::user_controller;
 use crate::features::equipment::controllers::equipment_controller;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations/");
@@ -22,6 +23,7 @@ async fn main() {
     let app = Router::new()
         .merge(greeting_controller::router())
         .merge(equipment_controller::router())
+        .merge(user_controller::router())
         .with_state(db_pool);
 
 

@@ -6,7 +6,7 @@ use axum::routing::get;
 use deadpool_diesel::postgres::Pool;
 use serde::Serialize;
 use uuid::{Uuid};
-use crate::features::equipment::dto::equipment_dto::EquipmentDto;
+use crate::features::equipment::dtos::equipment_dto::EquipmentDto;
 use crate::features::equipment::repos::equipment_repo::*;
 
 pub fn router() -> Router<Pool> {
