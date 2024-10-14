@@ -1,6 +1,7 @@
 use axum::{response::Html, routing::get, Router};
+use deadpool_diesel::postgres::Pool;
 
-pub fn router() -> Router {
+pub fn router() -> Router<Pool>   {
     Router::new()
         .route("/api/v1/greeting/hello", get(hello))
         .route("/api/v1/greeting/good-bye", get(good_bye))

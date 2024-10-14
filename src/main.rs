@@ -1,19 +1,40 @@
 use axum::Router;
 use listenfd::ListenFd;
 use tokio::net::TcpListener;
+use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 
-mod core;
 mod features;
 mod schema;
+mod core;
 
 use crate::features::greeting::greeting_controller;
 use crate::features::equipment::controllers::equipment_controller;
 
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations/");
+
 #[tokio::main]
 async fn main() {
+    // create db pools
+    let db_url = std::env::var("DATABASE_URL").unwrap();
+    let manager = deadpool_diesel::postgres::Manager::new(db_url, deadpool_diesel::Runtime::Tokio1);
+    let pool = deadpool_diesel::postgres::Pool::builder(manager)
+        .build()
+        .unwrap();
+
+    // run the migrations on server startup
+    {
+        let conn = pool.get().await.unwrap();
+        conn.interact(|conn| conn.run_pending_migrations(MIGRATIONS).map(|_| ()))
+            .await
+            .unwrap()
+            .unwrap();
+    }
+
     let app = Router::new()
         .merge(greeting_controller::router())
-        .merge(equipment_controller::router());
+        .merge(equipment_controller::router())
+        .with_state(pool);
+
 
     // create listener
     let listener = create_listener().await;

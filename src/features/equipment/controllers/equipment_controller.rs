@@ -1,13 +1,15 @@
 use axum::{extract::Path, response::Json, routing::post, Router};
+use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::get;
+use deadpool_diesel::postgres::Pool;
 use serde::Serialize;
 use uuid::{Uuid};
-use crate::features::equipment::mapper::equipment_mapper::model_to_dto;
-use crate::features::equipment::models::equipment_model::EquipmentModel;
+use crate::features::equipment::dto::equipment_dto::EquipmentDto;
+use crate::features::equipment::repos::equipment_repo::*;
 
-pub fn router() -> Router {
+pub fn router() -> Router<Pool> {
     Router::new()
         .route("/api/v1/equipment", get(get_all_equipment_handler))
         .route("/api/v1/equipment/:public_id", get(get_equipment_handler))
@@ -16,14 +18,12 @@ pub fn router() -> Router {
 }
 
 #[axum::debug_handler]
-async fn get_all_equipment_handler() -> impl IntoResponse {
-    use crate::features::equipment::repos::equipment_repo::get_all_equipment;
+async fn get_all_equipment_handler(State(_pool): State<Pool>) -> impl IntoResponse {
+    let equipment_models = get_all_equipment(_pool);
 
-    let equipment_models = get_all_equipment();
-
-    match equipment_models {
+    match equipment_models.await {
         Some(vec) => {
-            let dtos = vec.iter().map(|e| model_to_dto(e));
+            let dtos: Vec<EquipmentDto> = vec.iter().map(|e| EquipmentDto::from_model(e)).collect();
             (StatusCode::OK, Json(dtos)).into_response()
         },
         None => (StatusCode::NO_CONTENT).into_response(),
@@ -31,14 +31,13 @@ async fn get_all_equipment_handler() -> impl IntoResponse {
 }
 
 #[axum::debug_handler]
-async fn get_equipment_handler(Path(public_id): Path<Uuid>) -> impl IntoResponse {
-    use crate::features::equipment::repos::equipment_repo::get_equipment;
+async fn get_equipment_handler(
+    State(_pool): State<Pool>, Path(public_id): Path<Uuid>) -> impl IntoResponse {
+    let equipment_model = get_equipment(_pool, public_id);
 
-    let equipment = get_equipment(public_id);
-
-    match equipment {
+    match equipment_model.await {
         Some(item) => {
-            let dtos = model_to_dto(&item);
+            let dtos = EquipmentDto::from_model(&item);
             (StatusCode::OK, Json(dtos)).into_response()
         },
         None => (StatusCode::NO_CONTENT).into_response(),

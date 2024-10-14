@@ -1,54 +1,60 @@
+use deadpool_diesel::postgres::Pool;
 use diesel::associations::HasTable;
-use diesel::prelude::*;
 use uuid::Uuid;
+use crate::core::db_connection::db_connection::create_connection;
+
 
 // internal uses
-use crate::core::pg_connector::establish_connection;
+use crate::core::errors::error::AppError;
+use crate::core::errors::error::AppError::DatabaseQueryError;
+use crate::core::errors::error_handler::throw_error;
 use crate::features::equipment::models::equipment_model::EquipmentModel;
+use crate::schema::equipments::dsl::equipments;
 
-pub fn get_all_equipment() -> Option<Vec<EquipmentModel>> {
-    use crate::schema::equipments::dsl::*;
+pub async fn get_all_equipment(
+    pool: Pool,
+) -> Option<Vec<EquipmentModel>> {
+    let conn = match create_connection(pool).await {
+        Some(conn) => conn,
+        None => return None,
+    };
 
-    let conn = &mut establish_connection();
+    let result = conn.interact(|conn| {
+        equipments::table
+            .load(conn)
+    })
+    .await
+    .map_err(|e| DatabaseQueryError(e.to_string()));
 
-    let result = equipments
-                    .select(equipments::as_select())
-                    .load(conn)
-                    .optional();
     match result {
-        Ok(Some(result)) => Some(result),
-        Ok(None) => None,
-        Err(_) => panic!("Couldn't get equipments from database"),
+        Ok(equipment) => Some(equipment),
+        Err(e) => {
+            throw_error(e);
+            None
+        }
     }
 }
 
-pub fn get_equipment(public_id: Uuid) -> Option<EquipmentModel> {
-    use crate::schema::equipments::dsl::equipments;
+pub async fn get_equipment(
+    pool: Pool,
+    publicid: Uuid,
+) -> Option<EquipmentModel> {
+    let conn = match create_connection(pool).await {
+        Some(conn) => conn,
+        None => return None,
+    };
 
-    let conn = &mut establish_connection();
-
-
-    let result = equipments
-        .find(public_id)
-        .select(EquipmentModel::as_select())
-        .first(conn)
-        .optional();
+    let result = conn.interact(|conn| {
+        equipments::table
+            .find(publicid)   // Search by the equipment_id
+            .first::<EquipmentModel>(conn) // Get the first match (or error)
+    })
+    .await
+    .map_err(|e| DatabaseQueryError(e.to_string()));
 
     match result {
-        Ok(Some(result)) => Some(result),
-        Ok(None) => None,
-        Err(_) => panic!("Couldn't get equipments from database"),
+        Ok(equipment) => Some(equipment),
+        Err(_) => None
     }
 }
 
-pub fn create_equipment(equipment: &EquipmentModel) -> EquipmentModel {
-    use crate::schema::equipments::dsl::equipments;
-
-    let conn = &mut establish_connection();
-
-    diesel::insert_into(equipments::table)
-        .values(&equipment)
-        .returning(EquipmentModel::as_returning())
-        .get_result(conn)
-        .expect("Error saving new equipment")
-}
