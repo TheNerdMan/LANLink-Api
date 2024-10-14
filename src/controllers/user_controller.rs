@@ -2,16 +2,17 @@ use axum::{extract::Path, http::StatusCode, response::Json, routing::get, routin
 
 use crate::objects::user::User;
 use crate::objects::file_manager;
+//use crate::objects::crypto_manager;
 
 pub fn router() -> Router {
     Router::new()
         .route("/api/v1/user/:username", get(get_user))
-        .route("/api/v1/user/:username", post(create_user ))
-        .route("/api/v1/user/:username/edit/:type/:steam", post(set_user_test))
+        .route("/api/v1/user/:username", post(create_user))
+        .route("/api/v1/user/:username/edit/:type/:value", post(set_user_value))
 
 }
 
-async fn set_user_test(Path((username, var, value)): Path<(String, String, String)>) -> (StatusCode, Json<User>){
+async fn set_user_value(Path((username, var, value)): Path<(String, String, String)>) -> (StatusCode, Json<User>){
     
     if username.is_empty() || var.is_empty() || value.is_empty(){
         return (StatusCode::BAD_REQUEST, Json(User::new()))
@@ -24,6 +25,7 @@ async fn set_user_test(Path((username, var, value)): Path<(String, String, Strin
     let mut new_user = User{
         ..user
     };
+    // If we get here, the user exists
 
     if var == "discord" {
         new_user.discord = value;
@@ -33,12 +35,13 @@ async fn set_user_test(Path((username, var, value)): Path<(String, String, Strin
         return (StatusCode::BAD_REQUEST, Json(User::new()))
     }
 
+    // If we get here, the requested variable is valid
+
     let code = file_manager::save_user(&new_user);
     (code, Json(new_user))
 }
 
 async fn get_user(Path(username): Path<String>) -> (StatusCode, Json<User>) {
-    // Do db call to find user
     let user = file_manager::load_user(&username);
     if user.is_empty(){
         return (StatusCode::NO_CONTENT, Json(user));
@@ -47,6 +50,7 @@ async fn get_user(Path(username): Path<String>) -> (StatusCode, Json<User>) {
     }
 }
 
+#[axum::debug_handler]
 async fn create_user(Path(username): Path<String>) -> (StatusCode, Json<User>) {
     if username.is_empty() {
         return (StatusCode::BAD_REQUEST, Json(User::new()));
@@ -57,6 +61,7 @@ async fn create_user(Path(username): Path<String>) -> (StatusCode, Json<User>) {
         return (StatusCode::FORBIDDEN, Json(User::new()));
     }
     
+    // If we get here, the user does not currently exist
     let user = User{
         username,
         discord: String::new(),
