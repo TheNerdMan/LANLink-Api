@@ -48,7 +48,7 @@ pub async fn create_connection(pool: Pool) -> Option<Object> {
     match pool.get().await {
         Ok(conn) => Some(conn),
         Err(e) => {
-            // Handle the error by logging or throwing it using your custom error handler
+            // Handle the error by logging or throwing it using our custom error handler
             throw_error(AppError::DatabaseConnectionError(e.to_string()));
             None
         }

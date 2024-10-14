@@ -14,7 +14,7 @@ impl EquipmentDto {
         EquipmentDto {
             id: model.id.into(),
             publicid: model.publicid.into(),
-            name: model.name.clone(),
+            name: model.name.clone()
         }
     }
 }

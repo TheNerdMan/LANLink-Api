@@ -1,4 +1,5 @@
 use axum::Router;
+use deadpool_diesel::postgres::Pool;
 use listenfd::ListenFd;
 use tokio::net::TcpListener;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
@@ -14,26 +15,14 @@ pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations/");
 
 #[tokio::main]
 async fn main() {
-    // create db pools
-    let db_url = std::env::var("DATABASE_URL").unwrap();
-    let manager = deadpool_diesel::postgres::Manager::new(db_url, deadpool_diesel::Runtime::Tokio1);
-    let pool = deadpool_diesel::postgres::Pool::builder(manager)
-        .build()
-        .unwrap();
+    let db_pool = create_db_pool();
 
-    // run the migrations on server startup
-    {
-        let conn = pool.get().await.unwrap();
-        conn.interact(|conn| conn.run_pending_migrations(MIGRATIONS).map(|_| ()))
-            .await
-            .unwrap()
-            .unwrap();
-    }
+    run_migrations(&db_pool).await;
 
     let app = Router::new()
         .merge(greeting_controller::router())
         .merge(equipment_controller::router())
-        .with_state(pool);
+        .with_state(db_pool);
 
 
     // create listener
@@ -44,8 +33,26 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
+fn create_db_pool() -> Pool {
+    // create db pools
+    let db_url = dotenvy::var("DATABASE_URL").unwrap();
+    let manager = deadpool_diesel::postgres::Manager::new(db_url, deadpool_diesel::Runtime::Tokio1);
+    Pool::builder(manager)
+        .build()
+        .unwrap()
+}
+
+async fn run_migrations(pool: &Pool) {
+    let conn = pool.get().await.unwrap();
+    conn.interact(|conn| conn.run_pending_migrations(MIGRATIONS).map(|_| ()))
+        .await
+        .unwrap()
+        .unwrap();
+}
+
 async fn create_listener() -> TcpListener {
     let mut listenfd = ListenFd::from_env();
+    let port = dotenvy::var("PORT").unwrap();
     match listenfd.take_tcp_listener(0).unwrap() {
         // if we are given a tcp listener on listen fd 0, we use that one
         Some(listener) => {
@@ -53,6 +60,6 @@ async fn create_listener() -> TcpListener {
             TcpListener::from_std(listener).unwrap()
         }
         // otherwise fall back to local listening
-        None => TcpListener::bind("127.0.0.1:3000").await.unwrap(),
+        None => TcpListener::bind(format!("127.0.0.1:{port}")).await.unwrap(),
     }
 }
