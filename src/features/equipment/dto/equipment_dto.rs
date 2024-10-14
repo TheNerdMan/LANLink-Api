@@ -4,7 +4,7 @@ use crate::features::equipment::models::equipment_model::EquipmentModel;
 
 #[derive(Deserialize, Serialize)]
 pub struct EquipmentDto {
-    pub id: u32,
+    pub id: i32,
     pub publicid: Uuid,
     pub name: String,
 }

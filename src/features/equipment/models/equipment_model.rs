@@ -1,5 +1,6 @@
 use diesel::prelude::*;
-use diesel::sql_types::{Integer, Uuid as DieselUuid};
+use diesel::sql_types::Integer;
+use uuid::Uuid;
 use crate::features::equipment::dto::equipment_dto::EquipmentDto;
 
 #[derive(Queryable, Selectable)]
@@ -7,15 +8,15 @@ use crate::features::equipment::dto::equipment_dto::EquipmentDto;
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct EquipmentModel {
     pub id: Integer,
-    pub publicid: DieselUuid,
+    pub publicid: Uuid,
     pub name: String,
 }
 
 impl EquipmentModel {
     pub fn from_dto(dto: &EquipmentDto) -> Result<Self, uuid::Error> {
         Ok(EquipmentModel {
-            id: dto.id.into(),
-            publicid: dto.publicid.into(),
+            id: Integer::try_from(dto.id).expect("Huh?"),
+            publicid: dto.publicid,
             name: dto.name.clone(),
         })
     }

@@ -33,7 +33,7 @@ async fn get_all_equipment_handler(State(_pool): State<Pool>) -> impl IntoRespon
 #[axum::debug_handler]
 async fn get_equipment_handler(
     State(_pool): State<Pool>, Path(public_id): Path<Uuid>) -> impl IntoResponse {
-    let equipment_model = get_equipment(_pool, public_id);
+    let equipment_model = get_equipment_by_public_id(_pool, public_id);
 
     match equipment_model.await {
         Some(item) => {
@@ -43,28 +43,20 @@ async fn get_equipment_handler(
         None => (StatusCode::NO_CONTENT).into_response(),
     }
 }
-
-#[derive(Serialize)]
-struct Equipment {
-    pub id: u32,
-    pub public_id: Uuid,
-    pub name: String,
-}
-
 #[derive(Serialize)]
 struct HireEquipment {
-    pub id: u32,
+    pub id: i32,
     pub public_id: Uuid,
-    pub equipment: Equipment
+    pub equipment: EquipmentDto
 }
 
-async fn hire(Path(id): Path<u32>) -> (StatusCode, Json<HireEquipment>) {
+async fn hire(Path(id): Path<i32>) -> (StatusCode, Json<HireEquipment>) {
     let rsp = HireEquipment {
         id: 1,
         public_id: Uuid::new_v4(),
-        equipment: Equipment{
+        equipment: EquipmentDto{
             id,
-            public_id: Uuid::new_v4(),
+            publicid: Uuid::new_v4(),
             name: "Big wire".parse().unwrap()
         }
     };
@@ -75,9 +67,9 @@ async fn hire_by_name(Path(equipment_name): Path<String>) -> (StatusCode, Json<H
     let rsp = HireEquipment {
         id: 2,
         public_id: Uuid::new_v4(),
-        equipment: Equipment{
+        equipment: EquipmentDto{
             id: 3,
-            public_id: Uuid::new_v4(),
+            publicid: Uuid::new_v4(),
             name: equipment_name
         }
     };
