@@ -12,10 +12,6 @@ serde = { version = "1.0.210", features = ["derive"] }
 
 ## DATABASE ORM
 diesel = { version = "2.2.4", features = ["postgres", "uuid"] }
-# build libpq and openssl as part of the build process
-# uncomment these lines if you run into setup issues
-# pq-sys = { version = "0.6", features = ["bundled"] }
-# openssl-sys = { version = "0.9.100", features = ["vendored"] }
 
 ## MISC
 dotenvy = "0.15"
