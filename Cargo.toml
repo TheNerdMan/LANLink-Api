@@ -4,8 +4,19 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+## API FRAMEWORK
 axum = { version = "0.7.7", features = ["macros"] }
 listenfd = "1.0.1"
 serde = { version = "1.0.210", features = ["derive"] }
 serde_json = "1.0.128"
 tokio =  { version = "1.40.0",  features = ["rt", "rt-multi-thread", "macros"] }
+serde = { version = "1.0.210", features = ["derive"] }
+
+## DATABASE ORM
+diesel = { version = "2.2.4", features = ["postgres", "uuid"] }
+
+## MISC
+dotenvy = "0.15"
+uuid = { version = "1.10.0", features = ["v4", "serde"] }
+diesel_migrations = { version = "2.2.0", features = ["postgres"] }
+deadpool-diesel = { version = "0.6.1", features = ["postgres"] }
