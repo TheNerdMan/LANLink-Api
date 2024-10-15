@@ -18,3 +18,8 @@ dotenvy = "0.15"
 uuid = { version = "1.10.0", features = ["v4", "serde"] }
 diesel_migrations = { version = "2.2.0", features = ["postgres"] }
 deadpool-diesel = { version = "0.6.1", features = ["postgres"] }
+axum-login = "0.16.0"
+askama = "0.12.1"
+axum-messages = "0.7.0"
+async-trait = "0.1.83"
+thiserror = "1.0.64"
