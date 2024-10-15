@@ -6,11 +6,6 @@ use argon2::{
     Argon2
 };
 
-/*
-    These functions are currently unused, cargo run will cry about it.
-    Let cargo run cry about it. They work, and are being kept for future use.
-*/
-
 pub async fn generate_hash(input_string: &String) -> Result<String, argon2::password_hash::Error>{
 
     let byte_input = input_string.as_bytes();

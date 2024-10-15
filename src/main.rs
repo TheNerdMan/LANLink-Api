@@ -8,11 +8,11 @@ mod features;
 mod schema;
 mod core;
 
-use crate::features::auth::auth_controller;
-use crate::features::protected::protected_controller;
-use crate::features::greeting::greeting_controller;
-use crate::features::user::controllers::user_controller;
-use crate::features::equipment::controllers::equipment_controller;
+use features::auth::controllers::auth_controller;
+use features::protected::protected_controller;
+use features::greeting::greeting_controller;
+use features::user::controllers::user_controller;
+use features::equipment::controllers::equipment_controller;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations/");
 

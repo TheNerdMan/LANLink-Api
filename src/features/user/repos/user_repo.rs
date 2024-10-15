@@ -11,7 +11,7 @@ use crate::features::user::models::user_model::UserModel;
 use crate::schema::users::dsl::*;
 
 pub async fn get_all_users(
-    pool: Pool,
+    pool: &Pool,
 ) -> Option<Vec<UserModel>> {
     let conn = match create_connection(pool).await {
         Some(conn) => conn,
@@ -38,7 +38,7 @@ pub async fn get_all_users(
 }
 
 pub async fn get_user_by_id(
-    pool: Pool,
+    pool: &Pool,
     request_id: i32,
 ) -> Option<UserModel> {
     let conn = match create_connection(pool).await {
@@ -67,7 +67,7 @@ pub async fn get_user_by_id(
 }
 
 pub async fn get_user_by_public_id(
-    pool: Pool,
+    pool: &Pool,
     public_id: Uuid,
 ) -> Option<UserModel> {
     let conn = match create_connection(pool).await {
@@ -96,7 +96,7 @@ pub async fn get_user_by_public_id(
 }
 
 pub async fn create_or_update_user(
-    pool: Pool,
+    pool: &Pool,
     user_model: UserModel,
 ) -> Option<UserModel> {
     if user_model.id == 0 {
@@ -107,7 +107,7 @@ pub async fn create_or_update_user(
 }
 
 async fn create_user(
-    pool: Pool,
+    pool: &Pool,
     user_model: UserModel,
 ) -> Option<UserModel> {
     let conn = match create_connection(pool).await {
@@ -136,7 +136,7 @@ async fn create_user(
 }
 
 async fn update_user(
-    pool: Pool,
+    pool: &Pool,
     user_model: UserModel,
 ) -> Option<UserModel> {
     let conn = match create_connection(pool).await {

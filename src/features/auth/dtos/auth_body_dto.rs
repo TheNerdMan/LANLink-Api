@@ -1,12 +1,12 @@
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]
-pub struct AuthBody {
+pub struct AuthBodyDto {
     access_token: String,
     token_type: String,
 }
 
-impl AuthBody {
+impl AuthBodyDto {
     pub fn new(access_token: String) -> Self {
         Self {
             access_token,

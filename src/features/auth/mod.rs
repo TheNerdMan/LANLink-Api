@@ -1,5 +1,5 @@
-pub mod keys;
-pub mod auth_errors;
-pub mod claims;
-pub mod auth_body;
-pub mod auth_controller;
+pub mod models;
+pub mod controllers;
+pub mod dtos;
+pub mod key_creation_and_retrieval;
+pub mod repos;

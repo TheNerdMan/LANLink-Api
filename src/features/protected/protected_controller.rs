@@ -4,7 +4,7 @@ use axum::response::IntoResponse;
 use axum::Router;
 use axum::routing::post;
 use deadpool_diesel::postgres::Pool;
-use crate::features::auth::claims::Claims;
+use crate::features::auth::key_creation_and_retrieval::claims::Claims;
 
 pub fn router() -> Router<Pool> {
     Router::new()
@@ -14,8 +14,8 @@ pub fn router() -> Router<Pool> {
 #[axum::debug_handler]
 async fn protected(State(_pool): State<Pool>, claims: Claims) -> impl IntoResponse {
     if claims.username.is_empty() {
-        return StatusCode::UNAUTHORIZED;
+        return (StatusCode::UNAUTHORIZED, "no").into_response();
     }
     // Send the protected data to the user
-    format!("Welcome to the protected area, {}!", claims.username)
+    (StatusCode::OK, format!("Welcome to the protected area, {}!", claims.username)).into_response()
 }

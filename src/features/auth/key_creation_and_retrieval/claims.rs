@@ -1,13 +1,13 @@
 use async_trait::async_trait;
 use jsonwebtoken::{decode, Validation};
 use axum_extra::TypedHeader;
-use crate::features::auth::auth_errors::AuthError;
+use crate::core::errors::auth_errors::AuthError;
 use serde::{ Serialize, Deserialize };
 use axum::{ http::{ request::Parts }, extract::FromRequestParts, RequestPartsExt };
 use axum_extra::headers::Authorization;
 use axum_extra::headers::authorization::Bearer;
 use uuid::Uuid;
-use crate::features::auth::keys::KEYS;
+use crate::features::auth::key_creation_and_retrieval::keys::KEYS;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
