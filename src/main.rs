@@ -8,6 +8,8 @@ mod features;
 mod schema;
 mod core;
 
+use crate::features::auth::auth_controller;
+use crate::features::protected::protected_controller;
 use crate::features::greeting::greeting_controller;
 use crate::features::user::controllers::user_controller;
 use crate::features::equipment::controllers::equipment_controller;
@@ -21,6 +23,8 @@ async fn main() {
     run_migrations(&db_pool).await;
 
     let app = Router::new()
+        .merge(auth_controller::router())
+        .merge(protected_controller::router())
         .merge(greeting_controller::router())
         .merge(equipment_controller::router())
         .merge(user_controller::router())
