@@ -115,9 +115,17 @@ async fn create_user(
         None => return None,
     };
 
+    // This should be abstracted out to the UserModel impl
+    let mut new_user = UserModel::new();
+    new_user.publicid = Uuid::new_v4();
+    new_user.first_name = user_model.first_name;
+    new_user.last_name = user_model.last_name;
+    new_user.discord_username = user_model.discord_username;
+    new_user.steam_url = user_model.steam_url;
+    
     let result = conn.interact(move |c| {
         diesel::insert_into(users::table())
-            .values(&user_model)
+            .values(new_user)
             .returning(UserModel::as_returning())
             .get_result(c)
     })
@@ -144,10 +152,19 @@ async fn update_user(
         None => return None,
     };
 
+    // This should be abstracted out to the UserModel impl
+    // we are making sure not to delete the user public ID as it should be static
+    let mut update_user = UserModel::new();
+    update_user.id = user_model.id;
+    update_user.first_name = user_model.first_name;
+    update_user.last_name = user_model.last_name;
+    update_user.discord_username = user_model.discord_username;
+    update_user.steam_url = user_model.steam_url;
+    
     let result = conn.interact(move |c| {
         diesel::update(users::table())
-            .filter(id.eq(user_model.id))
-            .set(&user_model)
+            .filter(id.eq(update_user.id))
+            .set(&update_user)
             .returning(UserModel::as_returning())
             .get_result(c)
     })
