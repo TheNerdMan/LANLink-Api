@@ -4,56 +4,56 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::get;
 use deadpool_diesel::postgres::Pool;
-use serde::Serialize;
-use uuid::{Uuid};
-
+use uuid::Uuid;
+use crate::features::user::repos::user_repo::get_user_by_public_id;
 use crate::features::user::models::user_model::UserModel;
+use crate::features::user::repos::user_repo;
+use crate::features::user::repos::user_repo::get_all_users;
+use crate::features::user::dtos::user_dto::UserDto;
 
 pub fn router() -> Router<Pool> {
     Router::new()
-        .route("/api/v1/user/:username", get(get_user))
-        .route("/api/v1/user/:username", post(create_user))
+        .route("/api/v1/user", get(get_all_users_handler))
+        .route("/api/v1/user/:public_id", get(get_user_handler))
+        .route("/api/v1/user/create/:username", post(create_user))
 
 }
 
+
 #[axum::debug_handler]
-async fn get_user(Path(username): Path<String>) -> (StatusCode, Json<UserModel>) {
-    let dto = UserModel::new();
-    (StatusCode::IM_A_TEAPOT, Json(dto))
+async fn get_all_users_handler(State(_pool): State<Pool>) -> impl IntoResponse {
+    let equipment_models = get_all_users(_pool);
+
+    match equipment_models.await {
+        Some(vec) => {
+            let dtos: Vec<UserDto> = vec.iter().map(|e| UserDto::from_model(e)).collect();
+            (StatusCode::OK, Json(dtos)).into_response()
+        },
+        None => (StatusCode::NO_CONTENT).into_response(),
+    }
 }
 
 #[axum::debug_handler]
-async fn create_user(Path(username): Path<String>) -> (StatusCode, Json<UserModel>) {
-    let dto = UserModel::new();
-    if username.is_empty() {
-       return (StatusCode::IM_A_TEAPOT, Json(dto))
+async fn get_user_handler(
+    State(_pool): State<Pool>, Path(public_id): Path<Uuid>) -> impl IntoResponse {
+    let user_model = get_user_by_public_id(_pool, public_id);
+
+    match user_model.await {
+        Some(item) => {
+            let dtos = UserDto::from_model(&item);
+            (StatusCode::OK, Json(dtos)).into_response()
+        },
+        None => (StatusCode::NO_CONTENT).into_response(),
     }
+}
 
-    (StatusCode::IM_A_TEAPOT, Json(dto))
-    /*
-    let user = file_manager::load_user(&username);
-    if !user.is_empty() {
-        return (StatusCode::FORBIDDEN, Json(UserModel::new()));
-    }
+#[axum::debug_handler]
+async fn create_user(
+    State(_pool): State<Pool>, Path(username): Path<String>) -> impl IntoResponse {
+    let mut user_model = UserModel::new();
+    user_model.username = username.clone();
 
-    // If we get here, the user does not currently exist
-    let user = UserModel{
-        username,
-        discord: String::new(),
-        steam: String::new(),
-        strike_count: 0
-    };
+    let model = user_repo::create_or_update_user(_pool, user_model).await;
 
-    // ======================== SAVE USER ===================================
-    let code: StatusCode = file_manager::save_user(&user);
-
-    let result: (StatusCode, Json<UserModel>) = if code == StatusCode::OK{
-        (StatusCode::OK, Json(user))
-    }else{
-        (StatusCode::IM_A_TEAPOT, Json(UserModel::new()))
-    };
-    // ======================== END SAVE USER ===================================
-
-    result
-    */
+    (StatusCode::OK, Json(model)).into_response()
 }

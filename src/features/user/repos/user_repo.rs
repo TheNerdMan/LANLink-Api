@@ -98,11 +98,11 @@ pub async fn get_user_by_public_id(
 pub async fn create_or_update_user(
     pool: Pool,
     user_model: UserModel,
-)  {
+) -> Option<UserModel> {
     if user_model.id == 0 {
-        create_user(pool, user_model).await;
+        return create_user(pool, user_model).await
     } else {
-        update_user(pool, user_model).await;
+        return update_user(pool, user_model).await
     }
 }
 

@@ -39,11 +39,11 @@ impl UserModel{
             false
         }
     }
-    
+
     pub fn create_new_user_for_db(&self) -> UserModel {
         let mut new_user = UserModel::new();
         new_user.publicid = Uuid::new_v4();
-        new_user.first_name = self.first_name.clone();
+        new_user.username = self.username.clone();
         new_user.first_name = self.first_name.clone();
         new_user.last_name = self.last_name.clone();
         new_user.discord_username = self.discord_username.clone();
@@ -55,6 +55,7 @@ impl UserModel{
         // we are making sure not to delete the user public ID as it should be static
         let mut update_user = UserModel::new();
         update_user.id = self.id.clone();
+        update_user.username = self.username.clone();
         update_user.first_name = self.first_name.clone();
         update_user.last_name = self.last_name.clone();
         update_user.discord_username = self.discord_username.clone();
