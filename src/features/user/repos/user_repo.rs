@@ -27,9 +27,9 @@ pub async fn get_all_users(
         .map_err(|e| AppError::DatabaseQueryError(e.to_string()));
 
     match result {
-        Ok(equipment) => {
-            match equipment {
-                Ok(equipment) => Some(equipment),
+        Ok(user) => {
+            match user {
+                Ok(user) => Some(user),
                 Err(_) => None
             }
         },
@@ -56,9 +56,9 @@ pub async fn get_user_by_id(
         .map_err(|e| AppError::DatabaseQueryError(e.to_string()));
 
     match result {
-        Ok(equipment) => {
-            match equipment {
-                Ok(equipment) => Some(equipment),
+        Ok(user) => {
+            match user {
+                Ok(user) => Some(user),
                 Err(_) => None
             }
         },
@@ -85,9 +85,9 @@ pub async fn get_user_by_public_id(
         .map_err(|e| AppError::DatabaseQueryError(e.to_string()));
 
     match result {
-        Ok(equipment) => {
-            match equipment {
-                Ok(equipment) => Some(equipment),
+        Ok(user) => {
+            match user {
+                Ok(user) => Some(user),
                 Err(_) => None
             }
         },
@@ -125,9 +125,9 @@ async fn create_user(
         .map_err(|e| AppError::DatabaseQueryError(e.to_string()));
 
     match result {
-        Ok(equipment) => {
-            match equipment {
-                Ok(equipment) => Some(equipment),
+        Ok(user) => {
+            match user {
+                Ok(user) => Some(user),
                 Err(_) => None
             }
         },
@@ -155,9 +155,9 @@ async fn update_user(
         .map_err(|e| AppError::DatabaseQueryError(e.to_string()));
 
     match result {
-        Ok(equipment) => {
-            match equipment {
-                Ok(equipment) => Some(equipment),
+        Ok(user) => {
+            match user {
+                Ok(user) => Some(user),
                 Err(_) => None
             }
         },
