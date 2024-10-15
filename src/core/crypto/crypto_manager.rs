@@ -33,5 +33,4 @@ pub async fn validate_hash(stored_hash: String, input_string: &String) -> Result
     let parsed_hash = PasswordHash::new(&stored_hash)?;
 
     Ok(Argon2::default().verify_password(input_string.as_bytes(), &parsed_hash).is_ok())
-
 }
