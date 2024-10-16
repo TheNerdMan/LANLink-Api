@@ -49,7 +49,7 @@ async fn authorize(State(_pool): State<Pool>, Json(payload): Json<AuthPayload>) 
         _ => {}
     }
     
-    if &submitted_password_hash.unwrap() != &maybe_auth_user.unwrap().password_hash {
+    if crypto_manager::validate_hash(maybe_auth_user.unwrap().password_hash, &submitted_password_hash.unwrap()).await.is_err() {
         return Err(AuthError::WrongCredentials);
     }
 
