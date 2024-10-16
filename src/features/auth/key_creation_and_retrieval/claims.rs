@@ -13,7 +13,7 @@ use crate::features::auth::key_creation_and_retrieval::keys::KEYS;
 pub struct Claims {
     pub username: String,
     pub user_public_id: Uuid,
-    pub permissions_bitwise: String,
+    //pub permissions_bitwise: String,
     pub exp: usize,
 }
 
