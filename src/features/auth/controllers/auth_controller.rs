@@ -39,11 +39,11 @@ async fn authorize(State(_pool): State<Pool>, Json(payload): Json<AuthPayload>) 
     if maybe_auth_user.is_none() {
         return Err(AuthError::WrongCredentials);
     }
-    
+
     let auth_user = maybe_auth_user.unwrap();
-    
+
     let hash_result = crypto_manager::validate_hash(&auth_user.password_hash, &payload.client_secret).await;
-    
+
     match hash_result {
         Ok(passed) => {
             if !passed {
@@ -54,13 +54,13 @@ async fn authorize(State(_pool): State<Pool>, Json(payload): Json<AuthPayload>) 
             return Err(AuthError::WrongCredentials);
         }
     }
-    
+
     let user_public_id = user_repo::get_user_by_id(&_pool, auth_user.user_id).await;
-    
+
     if user_public_id.is_none() {
         return Err(AuthError::WrongCredentials);
     }
-    
+
     // create the timestamp for the expiry time - here the expiry time is 1 day
     // TODO: in production you may not want to have such a long JWT life
     let exp = (Utc::now().naive_utc() + chrono::naive::Days::new(1)).timestamp() as usize;
