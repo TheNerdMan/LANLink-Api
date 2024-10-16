@@ -21,8 +21,6 @@ pub fn router() -> Router<Pool> {
         .route("/api/v1/user", get(get_all_users_handler))
         .route("/api/v1/user/:public_id", get(get_user_handler))
         .route("/api/v1/user/create/:username", post(create_user))
-        .route("/api/v1/sign-up/username", post(username_sign_up))
-
 }
 
 
@@ -53,58 +51,6 @@ async fn get_user_handler(
     }
 }
 
-#[derive(serde::Deserialize)]
-struct UserSignUpDto {
-    username: String,
-    password: String,
-}
-
-#[axum::debug_handler]
-async fn username_sign_up(
-    State(_pool): State<Pool>,
-    Query(_user_name_sign_up): Query<UserSignUpDto>,
-) -> impl IntoResponse {
-    let mut user_model = UserModel::new();
-    user_model.username = _user_name_sign_up.username.clone();
-
-    let model = user_repo::create_or_update_user(&_pool, user_model).await;
-
-    match model {
-        None => {
-            throw_error(AppError::InternalServerError("Could not create user".parse().unwrap()));
-            return StatusCode::INTERNAL_SERVER_ERROR
-        },
-        _ => {}
-    }
-    
-    let password_hash_result = generate_hash(& _user_name_sign_up.password).await;
-    
-    match password_hash_result { 
-        Err(_) => {
-            throw_error(AppError::InternalServerError("Could not generate hash".parse().unwrap()));
-            return StatusCode::INTERNAL_SERVER_ERROR
-        },
-        _ => {}
-    }
-    
-    let new_auth_model = AuthUserModel {
-        id: 0,
-        user_id: model.unwrap().id,
-        username: _user_name_sign_up.username.clone(),
-        password_hash: password_hash_result.unwrap(),
-        created_at: Default::default(),
-        updated_at: Default::default(),
-    };
-    let auth_model = create_or_update_auth_user(&_pool, new_auth_model).await;
-    
-    match auth_model {
-        None => {
-            throw_error(AppError::InternalServerError("Could not create auth user".parse().unwrap()));
-            StatusCode::INTERNAL_SERVER_ERROR
-        },
-        Some(_) => StatusCode::OK
-    }
-}
 
 #[axum::debug_handler]
 async fn create_user(

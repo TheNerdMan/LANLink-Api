@@ -10,7 +10,7 @@ mod core;
 
 use features::auth::controllers::auth_controller;
 use features::protected::protected_controller;
-use features::greeting::greeting_controller;
+use features::sign_up::controllers::sign_up_controller;
 use features::user::controllers::user_controller;
 use features::equipment::controllers::equipment_controller;
 
@@ -25,7 +25,7 @@ async fn main() {
     let app = Router::new()
         .merge(auth_controller::router())
         .merge(protected_controller::router())
-        .merge(greeting_controller::router())
+        .merge(sign_up_controller::router())
         .merge(equipment_controller::router())
         .merge(user_controller::router())
         .with_state(db_pool);
