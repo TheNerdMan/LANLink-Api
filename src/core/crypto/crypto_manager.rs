@@ -20,7 +20,7 @@ pub async fn generate_hash(input_string: &String) -> Result<String, argon2::pass
     Ok(hash)
 }
 
-pub async fn validate_hash(stored_hash: String, input_string: &String) -> Result<bool, argon2::password_hash::Error> {
+pub async fn validate_hash(stored_hash: &String, input_string: &String) -> Result<bool, argon2::password_hash::Error> {
     // Verify password against PHC string.
     //
     // NOTE: hash params from `parsed_hash` are used instead of what is configured in the

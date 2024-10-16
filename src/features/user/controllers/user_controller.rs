@@ -21,7 +21,7 @@ pub fn router() -> Router<Pool> {
         .route("/api/v1/user", get(get_all_users_handler))
         .route("/api/v1/user/:public_id", get(get_user_handler))
         .route("/api/v1/user/create/:username", post(create_user))
-        .route("/api/v1/sign-up/email", post(email_sign_up))
+        .route("/api/v1/sign-up/username", post(username_sign_up))
 
 }
 
@@ -53,14 +53,19 @@ async fn get_user_handler(
     }
 }
 
+#[derive(serde::Deserialize)]
+struct UserSignUpDto {
+    username: String,
+    password: String,
+}
+
 #[axum::debug_handler]
-async fn email_sign_up(
-    State(_pool): State<Pool>, 
-    Query(_username): Query<String>, 
-    Query(_password): Query<String>
+async fn username_sign_up(
+    State(_pool): State<Pool>,
+    Query(_user_name_sign_up): Query<UserSignUpDto>,
 ) -> impl IntoResponse {
     let mut user_model = UserModel::new();
-    user_model.username = _username.clone();
+    user_model.username = _user_name_sign_up.username.clone();
 
     let model = user_repo::create_or_update_user(&_pool, user_model).await;
 
@@ -72,7 +77,7 @@ async fn email_sign_up(
         _ => {}
     }
     
-    let password_hash_result = generate_hash(&_password).await;
+    let password_hash_result = generate_hash(& _user_name_sign_up.password).await;
     
     match password_hash_result { 
         Err(_) => {
@@ -85,7 +90,7 @@ async fn email_sign_up(
     let new_auth_model = AuthUserModel {
         id: 0,
         user_id: model.unwrap().id,
-        username: _username,
+        username: _user_name_sign_up.username.clone(),
         password_hash: password_hash_result.unwrap(),
         created_at: Default::default(),
         updated_at: Default::default(),

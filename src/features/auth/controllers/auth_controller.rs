@@ -15,6 +15,7 @@ use crate::core::errors::error_handler::throw_error;
 use crate::features::auth::key_creation_and_retrieval::claims::Claims;
 use crate::features::auth::key_creation_and_retrieval::keys::KEYS;
 use crate::features::auth::repos::auth_repo;
+use crate::features::user::repos::user_repo;
 
 #[derive(Debug, Deserialize)]
 struct AuthPayload {
@@ -38,26 +39,33 @@ async fn authorize(State(_pool): State<Pool>, Json(payload): Json<AuthPayload>) 
     if maybe_auth_user.is_none() {
         return Err(AuthError::WrongCredentials);
     }
-
-    let submitted_password_hash = crypto_manager::generate_hash(&payload.client_secret).await;
-
-    match submitted_password_hash {
+    
+    let auth_user = maybe_auth_user.unwrap();
+    
+    let hash_result = crypto_manager::validate_hash(&auth_user.password_hash, &payload.client_secret).await;
+    
+    match hash_result {
+        Ok(passed) => {
+            if !passed {
+                return Err(AuthError::WrongCredentials);
+            }
+        }
         Err(_) => {
-            throw_error(AppError::InternalServerError("Could not generate hash".parse().unwrap()));
-            return Err(AuthError::WrongCredentials)
-        }, 
-        _ => {}
+            return Err(AuthError::WrongCredentials);
+        }
     }
     
-    if crypto_manager::validate_hash(maybe_auth_user.unwrap().password_hash, &submitted_password_hash.unwrap()).await.is_err() {
+    let user_public_id = user_repo::get_user_by_id(&_pool, auth_user.user_id).await;
+    
+    if user_public_id.is_none() {
         return Err(AuthError::WrongCredentials);
     }
-
+    
     // create the timestamp for the expiry time - here the expiry time is 1 day
     // TODO: in production you may not want to have such a long JWT life
     let exp = (Utc::now().naive_utc() + chrono::naive::Days::new(1)).timestamp() as usize;
     let claims = Claims {
-        user_public_id: Uuid::new_v4(),
+        user_public_id: user_public_id.unwrap().publicid,
         username: payload.client_id,
         exp,
     };
