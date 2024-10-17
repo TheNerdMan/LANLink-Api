@@ -68,6 +68,7 @@ async fn authorize(State(_pool): State<Pool>, Json(payload): Json<AuthPayload>) 
         user_public_id: user_public_id.unwrap().publicid,
         username: payload.client_id,
         exp,
+        permissions_bitwise: "".to_string(),
     };
     
     // Create the authorization token

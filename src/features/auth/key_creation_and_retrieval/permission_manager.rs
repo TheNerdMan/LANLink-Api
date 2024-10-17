@@ -4,11 +4,13 @@ use axum::http::request::Parts;
 use crate::core::errors::auth_errors::AuthError;
 use crate::features::auth::key_creation_and_retrieval::claims;
 
+
+
 #[derive(Debug)]
-struct PermissionsManager {
-    admin_permissions: FeaturePermissions,
-    user_permissions: FeaturePermissions,
-    equipment_permissions: FeaturePermissions,
+pub struct PermissionsManager {
+    pub admin_permissions: FeaturePermissions,
+    pub user_permissions: FeaturePermissions,
+    pub equipment_permissions: FeaturePermissions,
 }
 
 #[async_trait]
@@ -28,15 +30,16 @@ where S: Send + Sync {
     }
 }
 
+pub const permission_width: usize = 4;
 impl PermissionsManager {
-    fn new() -> Self {
+    pub fn new() -> Self {
         PermissionsManager {
             admin_permissions: FeaturePermissions::new(),
             user_permissions: FeaturePermissions::new(),
             equipment_permissions: FeaturePermissions::new(),
         }
     }
-    fn from_permissions_bitwise(permissions_bitwise: &String) -> Self {
+    pub fn from_permissions_bitwise(permissions_bitwise: &String) -> Self {
         let permissions: Vec<_> = permissions_bitwise.split("-").collect();
         
         Some(PermissionsManager {
@@ -45,11 +48,23 @@ impl PermissionsManager {
             equipment_permissions: FeaturePermissions::from_string(&permissions[2].to_string()).unwrap(),
         }).unwrap_or_else(|| PermissionsManager::new())
     }
+    pub fn to_permissions_bitwise(&self) -> String {
+        let mut permissions_bitwise = String::new();
+
+        permissions_bitwise.push_str(format!("{:0width$b}", self.admin_permissions.bits, width = permission_width).as_str());
+        permissions_bitwise.push_str("-");
+        permissions_bitwise.push_str(format!("{:0width$b}", self.user_permissions.bits, width = permission_width).as_str());
+        permissions_bitwise.push_str("-");
+        permissions_bitwise.push_str(format!("{:0width$b}", self.equipment_permissions.bits, width = permission_width).as_str());
+
+        permissions_bitwise
+
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
-struct FeaturePermissions {
-    bits: u32,
+pub struct FeaturePermissions {
+    pub bits: u32,
 }
 
 impl FeaturePermissions {
@@ -66,31 +81,31 @@ impl FeaturePermissions {
     }
 
 
-    fn set_permission(&mut self, permission: u32) {
+    pub fn set_permission(&mut self, permission: u32) {
         self.bits |= permission;
     }
 
-    fn remove_permission(&mut self, permission: u32) {
+    pub fn remove_permission(&mut self, permission: u32) {
         self.bits &= !permission;
     }
 
-    fn has_permission(&self, permission: u32) -> bool {
+    pub fn has_permission(&self, permission: u32) -> bool {
         (self.bits & permission) != 0
     }
 
-    fn set_permission_group(&mut self, group: u32) {
+    pub fn set_permission_group(&mut self, group: u32) {
         self.bits |= group;
     }
 
-    fn remove_permission_group(&mut self, group: u32) {
+    pub fn remove_permission_group(&mut self, group: u32) {
         self.bits &= !group;
     }
 
-    fn has_permission_group(&self, group: u32) -> bool {
+    pub fn has_permission_group(&self, group: u32) -> bool {
         (self.bits & group) == group
     }
 
-    fn clear_permissions(&mut self) {
+    pub fn clear_permissions(&mut self) {
         self.bits = 0;
     }
 }
