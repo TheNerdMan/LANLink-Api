@@ -6,6 +6,11 @@ use axum::routing::post;
 use deadpool_diesel::postgres::Pool;
 use crate::features::auth::key_creation_and_retrieval::claims::Claims;
 use crate::features::user::repos::user_repo;
+use crate::core::permissions::permission_manager::{FeaturePermissions, PermissionsManager};
+use crate::core::permissions::permission_constants::admin_permissions::*;
+use crate::core::permissions::permission_constants::user_permissions::*;
+use crate::core::permissions::permission_constants::equipment_permissions::*;
+use crate::features::user::models::user_model::UserModel;
 
 pub fn router() -> Router<Pool> {
     Router::new()
@@ -13,19 +18,9 @@ pub fn router() -> Router<Pool> {
         .route("/api/v1/protected/test", post(test))
 }
 
-use crate::features::auth::key_creation_and_retrieval::permission_manager;
-use crate::features::auth::key_creation_and_retrieval::permission_manager::FeaturePermissions;
-use crate::features::auth::key_creation_and_retrieval::permissions::admin_permissions::*;
-use crate::features::auth::key_creation_and_retrieval::permissions::user_permissions::*;
-use crate::features::auth::key_creation_and_retrieval::permissions::equipment_permissions::*;
+async fn test(State(_pool): State<Pool>, permissions: PermissionsManager) -> impl IntoResponse {
 
-async fn test(State(_pool): State<Pool>, claims: Claims) -> impl IntoResponse {
-
-    let mut perm = permission_manager::PermissionsManager{
-        admin_permissions: FeaturePermissions {bits: 0},
-        user_permissions: FeaturePermissions { bits: 0 },
-        equipment_permissions: FeaturePermissions { bits: 0 },
-    };
+    let mut perm = permissions;
 
     perm.admin_permissions.set_permission(ADMIN_READ_PERMISSION);
     perm.user_permissions.set_permission(USER_FULL_ACCESS);
@@ -105,22 +100,33 @@ async fn test(State(_pool): State<Pool>, claims: Claims) -> impl IntoResponse {
 }
 
 #[axum::debug_handler]
-async fn protected(State(_pool): State<Pool>, claims: Claims) -> impl IntoResponse {
+async fn protected(State(_pool): State<Pool>, permissions: PermissionsManager) -> impl IntoResponse {
     
-    print!("Claims: {:?}", claims);
-    let full_user = user_repo::get_user_by_public_id(&_pool, claims.user_public_id).await;
+    print!("Permissions: {:?}", permissions);
+    let full_user = user_repo::get_user_by_public_id(&_pool, permissions.claims.user_public_id).await;
     match full_user {
         Some(user) => {
             // Send the protected data to the user
-            (StatusCode::OK,
-             format!("Welcome to the protected area, \n Your name is: {} \n Your discord is: {} \n Your steam is: {}",
-                     format!("{} {}", user.first_name, user.last_name),
-                     user.discord_username,
-                     user.steam_url)
-            ).into_response()
+            let str = protected_success(&permissions, &user);
+           return (StatusCode::OK, str).into_response();
         }
         None => {
             return (StatusCode::NO_CONTENT, "User not found").into_response();
         }
     }
+}
+
+fn protected_success(permissions: &PermissionsManager, user: &UserModel) -> String {
+    let mut output_str = format!("Welcome to the protected area {}, \n Your name is: {} \n Your discord is: {} \n Your steam is: {}",
+                                 user.username,
+                                 format!("{} {}", user.first_name, user.last_name),
+                                 user.discord_username,
+                                 user.steam_url
+    );
+
+    output_str.push_str("\n");
+
+    output_str.push_str(format!("Your permission string is: {}", permissions.to_permissions_bitwise()).as_str());
+    
+    output_str
 }
