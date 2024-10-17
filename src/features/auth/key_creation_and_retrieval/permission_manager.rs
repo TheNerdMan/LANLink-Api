@@ -30,7 +30,7 @@ where S: Send + Sync {
     }
 }
 
-pub const permission_width: usize = 4;
+pub const PERMISSION_WIDTH: usize = 4;
 impl PermissionsManager {
     pub fn new() -> Self {
         PermissionsManager {
@@ -51,11 +51,11 @@ impl PermissionsManager {
     pub fn to_permissions_bitwise(&self) -> String {
         let mut permissions_bitwise = String::new();
 
-        permissions_bitwise.push_str(format!("{:0width$b}", self.admin_permissions.bits, width = permission_width).as_str());
+        permissions_bitwise.push_str(format!("{:0width$b}", self.admin_permissions.bits, width = PERMISSION_WIDTH).as_str());
         permissions_bitwise.push_str("-");
-        permissions_bitwise.push_str(format!("{:0width$b}", self.user_permissions.bits, width = permission_width).as_str());
+        permissions_bitwise.push_str(format!("{:0width$b}", self.user_permissions.bits, width = PERMISSION_WIDTH).as_str());
         permissions_bitwise.push_str("-");
-        permissions_bitwise.push_str(format!("{:0width$b}", self.equipment_permissions.bits, width = permission_width).as_str());
+        permissions_bitwise.push_str(format!("{:0width$b}", self.equipment_permissions.bits, width = PERMISSION_WIDTH).as_str());
 
         permissions_bitwise
 
