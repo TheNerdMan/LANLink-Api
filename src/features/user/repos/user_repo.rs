@@ -66,6 +66,37 @@ pub async fn get_user_by_id(
     }
 }
 
+
+
+pub async fn get_user_by_public_id(
+    pool: &Pool,
+    public_id: Uuid,
+) -> Option<UserModel> {
+    let conn = match create_connection(pool).await {
+        Some(conn) => conn,
+        None => return None,
+    };
+
+    let result = conn.interact(move |c| {
+        users::table()
+            .filter(publicid.eq(public_id))
+            .select(UserModel::as_select())
+            .first(c)
+    })
+        .await
+        .map_err(|e| AppError::DatabaseQueryError(e.to_string()));
+
+    match result {
+        Ok(user) => {
+            match user {
+                Ok(user) => Some(user),
+                Err(_) => None
+            }
+        },
+        Err(_) => None
+    }
+}
+
 pub async fn get_user_by_username(
     pool: &Pool,
     req_username: String,
@@ -95,9 +126,9 @@ pub async fn get_user_by_username(
     }
 }
 
-pub async fn get_user_by_public_id(
+pub async fn get_user_by_discord(
     pool: &Pool,
-    public_id: Uuid,
+    req_discord: String,
 ) -> Option<UserModel> {
     let conn = match create_connection(pool).await {
         Some(conn) => conn,
@@ -106,7 +137,36 @@ pub async fn get_user_by_public_id(
 
     let result = conn.interact(move |c| {
         users::table()
-            .filter(publicid.eq(public_id))
+            .filter(discord_username.eq(req_discord))
+            .select(UserModel::as_select())
+            .first(c)
+    })
+        .await
+        .map_err(|e| AppError::DatabaseQueryError(e.to_string()));
+
+    match result {
+        Ok(user) => {
+            match user {
+                Ok(user) => Some(user),
+                Err(_) => None
+            }
+        },
+        Err(_) => None
+    }
+}
+
+pub async fn get_user_by_steam(
+    pool: &Pool,
+    req_steam: String,
+) -> Option<UserModel> {
+    let conn = match create_connection(pool).await {
+        Some(conn) => conn,
+        None => return None,
+    };
+
+    let result = conn.interact(move |c| {
+        users::table()
+            .filter(steam_url.eq(req_steam))
             .select(UserModel::as_select())
             .first(c)
     })

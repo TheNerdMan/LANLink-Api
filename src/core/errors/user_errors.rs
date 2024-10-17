@@ -9,6 +9,7 @@ pub enum UserError {
     UserCreationFailed,
     UserUpdateFailed,
     InvalidParameter,
+    UserMismatch,
 }
 
 impl IntoResponse for UserError {
@@ -19,6 +20,7 @@ impl IntoResponse for UserError {
             UserError::UserCreationFailed => (StatusCode::INTERNAL_SERVER_ERROR, "User creation failed"),
             UserError::UserUpdateFailed => (StatusCode::INTERNAL_SERVER_ERROR, "User update failed"),
             UserError::InvalidParameter => (StatusCode::BAD_REQUEST, "Invalid Parameter"),
+            UserError::UserMismatch => (StatusCode::UNAUTHORIZED, "Unorthorized User"),
         };
         let body = Json(json!({
             "error": error_message,

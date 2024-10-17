@@ -3,11 +3,12 @@ use axum::extract::{State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use deadpool_diesel::postgres::Pool;
+use diesel::dsl::all;
 use serde::Deserialize;
 use uuid::Uuid;
 use crate::core::errors::user_errors::UserError;
 use crate::features::auth::key_creation_and_retrieval::claims::Claims;
-use crate::features::user::repos::user_repo::{get_user_by_public_id, get_user_by_username};
+use crate::features::user::repos::user_repo::{get_user_by_discord, get_user_by_public_id, get_user_by_steam, get_user_by_username};
 use crate::features::user::models::user_model::UserModel;
 use crate::features::user::repos::user_repo;
 use crate::features::user::dtos::user_dto::UserDto;
@@ -16,8 +17,16 @@ pub fn router() -> Router<Pool> {
     Router::new()
         .route("/api/v1/user/create/:username", post(create_user))
         .route("/api/v1/user/edit", post(edit_user))
-        //.route("/api/v1/user/get/:public_id", post(get_user_by_id))
         .route("/api/v1/user/get/:get_type/:value", post(get_user))
+}
+
+async fn handle_get_by_public_id(_pool: Pool, public_id: Uuid) -> Result<UserDto, UserError> {
+    let option = get_user_by_public_id(&_pool, public_id).await;
+    if option.is_some(){
+        Ok(UserDto::from_model(&option.unwrap()))
+    }else {
+        Err(UserError::UserNotFound)
+    }
 }
 
 async fn handle_get_by_username(_pool: Pool, username: String) -> Result<UserDto, UserError> {
@@ -29,8 +38,20 @@ async fn handle_get_by_username(_pool: Pool, username: String) -> Result<UserDto
     }
 }
 
-async fn handle_get_by_public_id(_pool: Pool, public_id: Uuid) -> Result<UserDto, UserError> {
-    let option = get_user_by_public_id(&_pool, public_id).await;
+
+
+async fn handle_get_by_discord_username(_pool: Pool, discord_username: String) -> Result<UserDto, UserError> {
+    let option = get_user_by_discord(&_pool, discord_username).await;
+    if option.is_some(){
+        Ok(UserDto::from_model(&option.unwrap()))
+    }else {
+        Err(UserError::UserNotFound)
+    }
+}
+
+async fn handle_get_by_steam_url(_pool: Pool, steam_url: String) -> Result<UserDto, UserError> {
+    let option = get_user_by_steam(&_pool, steam_url).await
+        .ok_or(UserError::UserNotFound)?;
     if option.is_some(){
         Ok(UserDto::from_model(&option.unwrap()))
     }else {
@@ -65,6 +86,26 @@ async fn get_user(State(_pool): State<Pool>, Path((get_type, value)): Path<(Stri
         }
 
     }
+
+    if get_type == "discord_username" {
+        let result = handle_get_by_discord_username(_pool, value).await;
+        if result.is_ok(){
+            let user = result?;
+            return Ok(Json(user));
+        }else{
+            return Ok(Json(UserDto::from_model(&UserModel::new())))
+        }
+    }
+
+    if get_type == "steam_url" {
+        let result = handle_get_by_steam_url(_pool, value).await;
+        if result.is_ok(){
+            let user = result?;
+            return Ok(Json(user));
+        }else{
+            return Ok(Json(UserDto::from_model(&UserModel::new())))
+        }
+    }
     Ok(Json(UserDto::from_model(&UserModel::new())))
 }
 #[derive(Debug, Deserialize)]
@@ -86,11 +127,22 @@ async fn edit_user(State(_pool): State<Pool>, claims: Claims, Json(payload): Jso
         return Err(UserError::MissingField);
     }
 
-    let user = get_user_by_public_id(&_pool, claims.user_public_id).await;
-    if user.is_none() {
-        return Err(UserError::UserNotFound);
+    let mut user = get_user_by_public_id(&_pool, claims.user_public_id).await
+        .ok_or(UserError::UserNotFound)?;
+
+    let (username_check, discord_check, steam_check) = tokio::join!(
+        get_user_by_username(&_pool, payload.new_username.clone()),
+        get_user_by_discord(&_pool, payload.new_discord_username.clone()),
+        get_user_by_steam(&_pool, payload.new_steam_url.clone())
+    );
+
+    for allowed_test in [username_check, discord_check, steam_check]{
+        if let Some(test_user) = allowed_test{
+            if test_user.publicid != user.publicid{
+                return Err(UserError::UserMismatch);
+            }
+        }
     }
-    let mut user = user.unwrap();
 
     user.username = payload.new_username;
     user.first_name = payload.new_first_name;
@@ -110,21 +162,16 @@ async fn edit_user(State(_pool): State<Pool>, claims: Claims, Json(payload): Jso
 #[axum::debug_handler]
 async fn create_user(
     State(_pool): State<Pool>, Path(username): Path<String>) -> impl IntoResponse {
-    let mut user_model = UserModel::new();
-    user_model.username = username.clone();
 
-    let model = user_repo::create_or_update_user(&_pool, user_model).await;
+    let mut user = get_user_by_username(&_pool, username.clone()).await;
+    if user.is_some(){
+        return (StatusCode::UNAUTHORIZED, "User already exists").into_response();
+    }
+
+    let mut user = UserModel::new();
+    user.username = username.clone();
+
+    let model = user_repo::create_or_update_user(&_pool, user).await;
 
     (StatusCode::OK, Json(model)).into_response()
 }
-
-/*
-async fn get_user_by_id(State(_pool): State<Pool>, Path(public_id): Path<Uuid>) -> Result<Json<UserDto>, UserError>{
-    let user = get_user_by_public_id(&_pool, public_id).await;
-    return if user.is_none() {
-        Err(UserError::UserNotFound)
-    } else {
-        Ok(Json(UserDto::from_model(&user.unwrap())))
-    }
-}
-*/
