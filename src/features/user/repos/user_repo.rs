@@ -66,6 +66,35 @@ pub async fn get_user_by_id(
     }
 }
 
+pub async fn get_user_by_username(
+    pool: &Pool,
+    req_username: String,
+) -> Option<UserModel> {
+    let conn = match create_connection(pool).await {
+        Some(conn) => conn,
+        None => return None,
+    };
+
+    let result = conn.interact(move |c| {
+        users::table()
+            .filter(username.eq(req_username))
+            .select(UserModel::as_select())
+            .first(c)
+    })
+        .await
+        .map_err(|e| AppError::DatabaseQueryError(e.to_string()));
+
+    match result {
+        Ok(user) => {
+            match user {
+                Ok(user) => Some(user),
+                Err(_) => None
+            }
+        },
+        Err(_) => None
+    }
+}
+
 pub async fn get_user_by_public_id(
     pool: &Pool,
     public_id: Uuid,
