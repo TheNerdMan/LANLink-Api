@@ -50,8 +50,7 @@ async fn handle_get_by_discord_username(_pool: Pool, discord_username: String) -
 }
 
 async fn handle_get_by_steam_url(_pool: Pool, steam_url: String) -> Result<UserDto, UserError> {
-    let option = get_user_by_steam(&_pool, steam_url).await
-        .ok_or(UserError::UserNotFound)?;
+    let option = get_user_by_steam(&_pool, steam_url).await;
     if option.is_some(){
         Ok(UserDto::from_model(&option.unwrap()))
     }else {
