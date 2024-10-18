@@ -10,7 +10,7 @@ use uuid::Uuid;
 use crate::core::crypto::crypto_manager;
 use crate::features::auth::dtos::auth_body_dto::AuthBodyDto;
 use crate::core::errors::auth_errors::AuthError;
-use crate::core::errors::error::AppError;
+use crate::core::errors::error::AppErrorEnum;
 use crate::core::errors::error_handler::throw_error;
 use crate::features::auth::key_creation_and_retrieval::claims::Claims;
 use crate::features::auth::key_creation_and_retrieval::keys::KEYS;

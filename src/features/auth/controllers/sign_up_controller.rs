@@ -5,7 +5,7 @@ use axum::Router;
 use axum::routing::{post};
 use deadpool_diesel::postgres::Pool;
 use crate::core::crypto::crypto_manager::generate_hash;
-use crate::core::errors::error::AppError;
+use crate::core::errors::error::{AppError, AppErrorEnum};
 use crate::core::errors::error_handler::throw_error;
 use crate::core::permissions::permission_manager::PermissionsManager;
 use crate::features::auth::models::auth_user_model::AuthUserModel;
@@ -37,7 +37,7 @@ async fn username_sign_up(
 
     match model {
         None => {
-            throw_error(AppError::InternalServerError("Could not create user".parse().unwrap()));
+            throw_error(AppError::new(AppErrorEnum::InternalServerError,"Could not create user".parse().unwrap()));
             return StatusCode::INTERNAL_SERVER_ERROR
         },
         _ => {}
@@ -47,7 +47,7 @@ async fn username_sign_up(
 
     match password_hash_result {
         Err(_) => {
-            throw_error(AppError::InternalServerError("Could not generate hash".parse().unwrap()));
+            throw_error(AppError::new(AppErrorEnum::InternalServerError, "Could not generate hash".parse().unwrap()));
             return StatusCode::INTERNAL_SERVER_ERROR
         },
         _ => {}
@@ -66,7 +66,7 @@ async fn username_sign_up(
 
     match auth_model {
         None => {
-            throw_error(AppError::InternalServerError("Could not create auth user".parse().unwrap()));
+            throw_error(AppError::new(AppErrorEnum::InternalServerError, "Could not create auth user".parse().unwrap()));
             StatusCode::INTERNAL_SERVER_ERROR
         },
         Some(_) => StatusCode::OK

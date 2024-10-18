@@ -3,10 +3,9 @@ use axum::extract::{State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use deadpool_diesel::postgres::Pool;
-use diesel::dsl::all;
 use serde::Deserialize;
 use uuid::Uuid;
-use crate::core::errors::user_errors::UserError;
+use crate::core::errors::error::{AppError, AppErrorEnum};
 use crate::core::permissions::permission_constants::user_permissions::*;
 use crate::core::permissions::permission_manager::PermissionsManager;
 use crate::features::auth::key_creation_and_retrieval::claims::Claims;
@@ -22,53 +21,59 @@ pub fn router() -> Router<Pool> {
         .route("/api/v1/user/get/:get_type/:value", post(get_user))
 }
 
-async fn handle_get_by_public_id(_pool: Pool, public_id: Uuid) -> Result<UserDto, UserError> {
+async fn handle_get_by_public_id(_pool: Pool, public_id: Uuid) -> Result<UserDto, AppError> {
     let option = get_user_by_public_id(&_pool, public_id).await;
     if option.is_some(){
         Ok(UserDto::from_model(&option.unwrap()))
     }else {
-        Err(UserError::UserNotFound)
+        Err(AppError::new(AppErrorEnum::UserNotFound,String::from("User not found")))
     }
 }
 
-async fn handle_get_by_username(_pool: Pool, username: String) -> Result<UserDto, UserError> {
+async fn handle_get_by_username(_pool: Pool, username: String) -> Result<UserDto, AppError> {
     let option = get_user_by_username(&_pool, username).await;
     if option.is_some(){
         Ok(UserDto::from_model(&option.unwrap()))
     }else {
-        Err(UserError::UserNotFound)
+        Err(AppError::new(AppErrorEnum::UserNotFound,String::from("User not found")))
     }
 }
 
 
 
-async fn handle_get_by_discord_username(_pool: Pool, discord_username: String) -> Result<UserDto, UserError> {
+async fn handle_get_by_discord_username(_pool: Pool, discord_username: String) -> Result<UserDto, AppError> {
     let option = get_user_by_discord(&_pool, discord_username).await;
     if option.is_some(){
         Ok(UserDto::from_model(&option.unwrap()))
     }else {
-        Err(UserError::UserNotFound)
+        Err(AppError::new(AppErrorEnum::UserNotFound,String::from("User not found")))
     }
 }
 
-async fn handle_get_by_steam_url(_pool: Pool, steam_url: String) -> Result<UserDto, UserError> {
+async fn handle_get_by_steam_url(_pool: Pool, steam_url: String) -> Result<UserDto, AppError> {
     let option = get_user_by_steam(&_pool, steam_url).await;
     if option.is_some(){
         Ok(UserDto::from_model(&option.unwrap()))
     }else {
-        Err(UserError::UserNotFound)
+        Err(AppError::new(AppErrorEnum::UserNotFound,String::from("User not found")))
     }
 }
-async fn get_user(State(_pool): State<Pool>, claims: Claims, Path((get_type, value)): Path<(String, String)>) -> Result<Json<UserDto>, UserError> {
+async fn get_user(State(_pool): State<Pool>, claims: Claims, Path((get_type, value)): Path<(String, String)>) -> Result<Json<UserDto>, AppError> {
 
-    let permission = PermissionsManager::from_permissions_bitwise(&claims.permissions_bitwise);
+    let permission_option = PermissionsManager::from_permissions_bitwise(&claims.permissions_bitwise);
+    
+    let permission = match permission_option {
+        Some(permission) => permission,
+        None => return Err(AppError::new(AppErrorEnum::BadRequestError, String::from("Permissions bitwise broken")))
+    };
+    
     if !permission.user_permissions.has_permission(USER_WRITE_PERMISSION) { // Yes im aware default includes the read permission
-        return Err(UserError::InsufficientPermissions)
+        return Err(AppError::new(AppErrorEnum::InsufficientPermissions, String::from("InsufficientPermissions")))
     }
 
 
     if get_type.is_empty() || value.is_empty() {
-        return Err(UserError::MissingField);
+        return Err(AppError::new(AppErrorEnum::MissingField, String::from("MissingField")));
     }
 
     if get_type == "username" {
@@ -126,11 +131,15 @@ struct EditUserPayload {
 }
 
 
-async fn edit_user(State(_pool): State<Pool>, claims: Claims, Json(payload): Json<EditUserPayload>) -> Result<impl IntoResponse, UserError> {
+async fn edit_user(State(_pool): State<Pool>, claims: Claims, Json(payload): Json<EditUserPayload>) -> Result<impl IntoResponse, AppError> {
 
-    let permission = PermissionsManager::from_permissions_bitwise(&claims.permissions_bitwise);
+    let permission_option = PermissionsManager::from_permissions_bitwise(&claims.permissions_bitwise);
+    let permission = match permission_option {
+        Some(permission) => permission,
+        None => return Err(AppError::new(AppErrorEnum::BadRequestError, String::from("Permissions bitwise broken")))
+    };
     if !permission.user_permissions.has_permission(USER_WRITE_PERMISSION){
-        return Err(UserError::InsufficientPermissions)
+        return Err(AppError::new(AppErrorEnum::InsufficientPermissions, String::from("InsufficientPermissions")))
     }
 
     if payload.new_username.is_empty()
@@ -138,11 +147,11 @@ async fn edit_user(State(_pool): State<Pool>, claims: Claims, Json(payload): Jso
         || payload.new_last_name.is_empty()
         || payload.new_discord_username.is_empty()
         || payload.new_steam_url.is_empty(){
-        return Err(UserError::MissingField);
+        return Err(AppError::new(AppErrorEnum::MissingField, String::from("Missing Field")));
     }
 
     let mut user = get_user_by_public_id(&_pool, claims.user_public_id).await
-        .ok_or(UserError::UserNotFound)?;
+        .ok_or(AppError::new(AppErrorEnum::UserNotFound, String::from("User not found")))?;
 
     let (username_check, discord_check, steam_check) = tokio::join!(
         get_user_by_username(&_pool, payload.new_username.clone()),
@@ -153,7 +162,7 @@ async fn edit_user(State(_pool): State<Pool>, claims: Claims, Json(payload): Jso
     for allowed_test in [username_check, discord_check, steam_check]{
         if let Some(test_user) = allowed_test{
             if test_user.publicid != user.publicid{
-                return Err(UserError::UserMismatch);
+                return Err(AppError::new(AppErrorEnum::UserMismatch, String::from("User mismatch")));
             }
         }
     }
@@ -165,7 +174,7 @@ async fn edit_user(State(_pool): State<Pool>, claims: Claims, Json(payload): Jso
     user.steam_url = payload.new_steam_url;
 
     if user_repo::create_or_update_user(&_pool, user).await.is_none(){
-        return Err(UserError::UserUpdateFailed);
+        return Err(AppError::new(AppErrorEnum::UserUpdateFailed, String::from("User update failed")));
     }
 
     Ok(Json("User updated").into_response())

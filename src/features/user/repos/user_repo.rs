@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 // internal uses
 use crate::core::db_connection::db_connection::create_connection;
-use crate::core::errors::error::AppError;
+use crate::core::errors::error::*;
 use crate::features::user::models::user_model::UserModel;
 use crate::schema::users::dsl::*;
 
@@ -24,7 +24,7 @@ pub async fn get_all_users(
             .load::<UserModel>(c)
     })
         .await
-        .map_err(|e| AppError::DatabaseQueryError(e.to_string()));
+        .map_err(|e| AppError::new(AppErrorEnum::DatabaseQueryError, e.to_string()));
 
     match result {
         Ok(user) => {
@@ -53,7 +53,7 @@ pub async fn get_user_by_id(
             .first(c)
     })
         .await
-        .map_err(|e| AppError::DatabaseQueryError(e.to_string()));
+        .map_err(|e| AppError::new(AppErrorEnum::DatabaseQueryError, e.to_string()));
 
     match result {
         Ok(user) => {
@@ -84,7 +84,7 @@ pub async fn get_user_by_public_id(
             .first(c)
     })
         .await
-        .map_err(|e| AppError::DatabaseQueryError(e.to_string()));
+        .map_err(|e| AppError::new(AppErrorEnum::DatabaseQueryError, e.to_string()));
 
     match result {
         Ok(user) => {
@@ -113,7 +113,7 @@ pub async fn get_user_by_username(
             .first(c)
     })
         .await
-        .map_err(|e| AppError::DatabaseQueryError(e.to_string()));
+        .map_err(|e| AppError::new(AppErrorEnum::DatabaseQueryError, e.to_string()));
 
     match result {
         Ok(user) => {
@@ -142,7 +142,7 @@ pub async fn get_user_by_discord(
             .first(c)
     })
         .await
-        .map_err(|e| AppError::DatabaseQueryError(e.to_string()));
+        .map_err(|e| AppError::new(AppErrorEnum::DatabaseQueryError, e.to_string()));
 
     match result {
         Ok(user) => {
@@ -171,7 +171,7 @@ pub async fn get_user_by_steam(
             .first(c)
     })
         .await
-        .map_err(|e| AppError::DatabaseQueryError(e.to_string()));
+        .map_err(|e| AppError::new(AppErrorEnum::DatabaseQueryError, e.to_string()));
 
     match result {
         Ok(user) => {
@@ -211,7 +211,7 @@ async fn create_user(
             .get_result(c)
     })
         .await
-        .map_err(|e| AppError::DatabaseQueryError(e.to_string()));
+        .map_err(|e| AppError::new(AppErrorEnum::DatabaseQueryError, e.to_string()));
 
     match result {
         Ok(user) => {
@@ -241,7 +241,7 @@ async fn update_user(
             .get_result(c)
     })
         .await
-        .map_err(|e| AppError::DatabaseQueryError(e.to_string()));
+        .map_err(|e| AppError::new(AppErrorEnum::DatabaseQueryError, e.to_string()));
 
     match result {
         Ok(user) => {
