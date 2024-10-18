@@ -41,7 +41,7 @@ impl PermissionsManager {
     }
     pub fn from_permissions_bitwise(permissions_bitwise: &String) -> Self {
         let permissions: Vec<_> = permissions_bitwise.split("-").collect();
-
+        
         Some(PermissionsManager {
             admin_permissions: FeaturePermissions::from_string(&permissions[0].to_string()).unwrap(),
             user_permissions: FeaturePermissions::from_string(&permissions[1].to_string()).unwrap(),
@@ -51,11 +51,11 @@ impl PermissionsManager {
     pub fn to_permissions_bitwise(&self) -> String {
         let mut permissions_bitwise = String::new();
 
-        permissions_bitwise.push_str(format!("{:0width$b}", self.admin_permissions.bits, width = permission_width).as_str());
+        permissions_bitwise.push_str(format!("{:0width$b}", self.admin_permissions.bits, width = PERMISSION_WIDTH).as_str());
         permissions_bitwise.push_str("-");
-        permissions_bitwise.push_str(format!("{:0width$b}", self.user_permissions.bits, width = permission_width).as_str());
+        permissions_bitwise.push_str(format!("{:0width$b}", self.user_permissions.bits, width = PERMISSION_WIDTH).as_str());
         permissions_bitwise.push_str("-");
-        permissions_bitwise.push_str(format!("{:0width$b}", self.equipment_permissions.bits, width = permission_width).as_str());
+        permissions_bitwise.push_str(format!("{:0width$b}", self.equipment_permissions.bits, width = PERMISSION_WIDTH).as_str());
 
         permissions_bitwise
 
