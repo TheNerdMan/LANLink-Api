@@ -10,6 +10,7 @@ pub enum UserError {
     UserUpdateFailed,
     InvalidParameter,
     UserMismatch,
+    InsufficientPermissions,
 }
 
 impl IntoResponse for UserError {
@@ -20,7 +21,8 @@ impl IntoResponse for UserError {
             UserError::UserCreationFailed => (StatusCode::INTERNAL_SERVER_ERROR, "User creation failed"),
             UserError::UserUpdateFailed => (StatusCode::INTERNAL_SERVER_ERROR, "User update failed"),
             UserError::InvalidParameter => (StatusCode::BAD_REQUEST, "Invalid Parameter"),
-            UserError::UserMismatch => (StatusCode::UNAUTHORIZED, "Unorthorized User"),
+            UserError::UserMismatch => (StatusCode::UNAUTHORIZED, "Unauthorized User"),
+            UserError::InsufficientPermissions => (StatusCode::UNAUTHORIZED, "You do not have permission to perform this action"),
         };
         let body = Json(json!({
             "error": error_message,

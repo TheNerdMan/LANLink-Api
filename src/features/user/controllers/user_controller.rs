@@ -7,6 +7,8 @@ use diesel::dsl::all;
 use serde::Deserialize;
 use uuid::Uuid;
 use crate::core::errors::user_errors::UserError;
+use crate::core::permissions::permission_constants::user_permissions::USER_WRITE_PERMISSION;
+use crate::core::permissions::permission_manager::PermissionsManager;
 use crate::features::auth::key_creation_and_retrieval::claims::Claims;
 use crate::features::user::repos::user_repo::{get_user_by_discord, get_user_by_public_id, get_user_by_steam, get_user_by_username};
 use crate::features::user::models::user_model::UserModel;
@@ -57,7 +59,14 @@ async fn handle_get_by_steam_url(_pool: Pool, steam_url: String) -> Result<UserD
         Err(UserError::UserNotFound)
     }
 }
-async fn get_user(State(_pool): State<Pool>, Path((get_type, value)): Path<(String, String)>) -> Result<Json<UserDto>, UserError> {
+async fn get_user(State(_pool): State<Pool>, claims: Claims, Path((get_type, value)): Path<(String, String)>) -> Result<Json<UserDto>, UserError> {
+
+    let permission = PermissionsManager::from_permissions_bitwise(&claims.permissions_bitwise);
+    if !permission.user_permissions.has_permission(USER_WRITE_PERMISSION) { // Yes im aware default includes the read permission
+        return Err(UserError::InsufficientPermissions)
+    }
+
+
     if get_type.is_empty() || value.is_empty() {
         return Err(UserError::MissingField);
     }
@@ -118,6 +127,12 @@ struct EditUserPayload {
 
 
 async fn edit_user(State(_pool): State<Pool>, claims: Claims, Json(payload): Json<EditUserPayload>) -> Result<impl IntoResponse, UserError> {
+
+    let permission = PermissionsManager::from_permissions_bitwise(&claims.permissions_bitwise);
+    if !permission.user_permissions.has_permission(USER_WRITE_PERMISSION){
+        return Err(UserError::InsufficientPermissions)
+    }
+
     if payload.new_username.is_empty()
         || payload.new_first_name.is_empty()
         || payload.new_last_name.is_empty()
