@@ -1,5 +1,6 @@
 use diesel::prelude::*;
 use serde::Serialize;
+use crate::core::permissions::permission_manager::PermissionsManager;
 
 #[derive(Queryable, Selectable, Serialize)]
 #[diesel(table_name = crate::schema::auth_users)]
@@ -9,6 +10,7 @@ pub struct AuthUserModel{
     pub user_id: i32,
     pub username: String,
     pub password_hash: String,
+    pub permissions_bitwise: String,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
 }
@@ -20,6 +22,7 @@ pub struct NewAuthUserModel{
     pub user_id: i32,
     pub username: String,
     pub password_hash: String,
+    pub permissions_bitwise: String,
 }
 
 #[derive(AsChangeset)]
@@ -30,6 +33,7 @@ pub struct UpdateAuthUserModel{
     pub user_id: i32,
     pub username: String,
     pub password_hash: String,
+    pub permissions_bitwise: String,
     pub updated_at: chrono::NaiveDateTime,
 }
 
@@ -40,6 +44,7 @@ impl AuthUserModel{
             user_id: 0,
             username: String::new(),
             password_hash: String::new(),
+            permissions_bitwise: PermissionsManager::get_default_permissions_bitwise(),
             created_at: Default::default(),
             updated_at: Default::default(),
         }
@@ -50,6 +55,7 @@ impl AuthUserModel{
             user_id: self.user_id.clone(),
             username: self.username.clone(),
             password_hash: self.password_hash.clone(),
+            permissions_bitwise: self.permissions_bitwise.clone(),
         }
     }
     pub fn create_update_auth_user_for_db(&self) -> UpdateAuthUserModel {
@@ -59,6 +65,7 @@ impl AuthUserModel{
             username: self.username.clone(),
             password_hash: self.password_hash.clone(),
             updated_at: self.updated_at.clone(),
+            permissions_bitwise: self.permissions_bitwise.clone(),
         }
     }
 }

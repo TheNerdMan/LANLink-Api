@@ -22,13 +22,14 @@ where S: Send + Sync {
     type Rejection = AuthError;
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-        let claims_result = claims::Claims::from_request_parts(parts, _state).await;
+        let claims_result = Claims::from_request_parts(parts, _state).await;
         let claims = match claims_result {
             Ok(claims) => claims,
             Err(_) => return Err(AuthError::InvalidToken),
         };
-        // extract permissions from claims permissions_bitwise
-        let permissions = PermissionsManager::from_permissions_bitwise(&claims.permissions_bitwise);
+        // extract permission_constants from claims permissions_bitwise
+        let mut permissions = PermissionsManager::from_permissions_bitwise(&claims.permissions_bitwise);
+        permissions.claims = claims;
         Ok(permissions)
     }
 }
@@ -49,7 +50,7 @@ impl PermissionsManager {
             equipment_permissions: FeaturePermissions::new(),
         }
     }
-    
+
     pub fn Default() -> Self {
         let mut default = PermissionsManager {
             claims: Claims::new(),
@@ -57,25 +58,25 @@ impl PermissionsManager {
             user_permissions: FeaturePermissions::new(),
             equipment_permissions: FeaturePermissions::new(),
         };
-        
+
         // Set default permissions every user should have on sign up
         default.user_permissions.set_permission(USER_READ_PERMISSION);
         default.equipment_permissions.set_permission(EQUIP_READ_PERMISSION);
-        
+
         default
     }
-    
+
     pub fn get_default_permissions_bitwise() -> String {
         PermissionsManager::Default().to_permissions_bitwise()
     }
-    
+
     pub fn from_permissions_bitwise(permissions_bitwise: &String) -> Self {
         let permissions: Vec<_> = permissions_bitwise.split("-").collect();
-        
+
         if permissions.len() != 3 {
             return PermissionsManager::new();
         }
-        
+
         Some(PermissionsManager {
             claims: Claims::new(),
             admin_permissions: FeaturePermissions::from_string(&permissions[0].to_string()).unwrap(),
@@ -83,7 +84,7 @@ impl PermissionsManager {
             equipment_permissions: FeaturePermissions::from_string(&permissions[2].to_string()).unwrap(),
         }).unwrap_or_else(|| PermissionsManager::new())
     }
-    
+
     pub fn to_permissions_bitwise(&self) -> String {
         let mut permissions_bitwise = String::new();
 
@@ -106,7 +107,7 @@ impl FeaturePermissions {
     fn new() -> Self {
         FeaturePermissions { bits: 0 }
     }
-    
+
     fn from_string(permissions_bitwise: &String) -> Result<Self, &'static str> {
         if let Ok(bits) = u32::from_str_radix(permissions_bitwise, 2) {
             Ok(FeaturePermissions { bits })

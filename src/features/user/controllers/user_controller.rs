@@ -7,7 +7,7 @@ use diesel::dsl::all;
 use serde::Deserialize;
 use uuid::Uuid;
 use crate::core::errors::user_errors::UserError;
-use crate::core::permissions::permission_constants::user_permissions::USER_WRITE_PERMISSION;
+use crate::core::permissions::permission_constants::user_permissions::*;
 use crate::core::permissions::permission_manager::PermissionsManager;
 use crate::features::auth::key_creation_and_retrieval::claims::Claims;
 use crate::features::user::repos::user_repo::{get_user_by_discord, get_user_by_public_id, get_user_by_steam, get_user_by_username};

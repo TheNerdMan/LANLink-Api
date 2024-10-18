@@ -33,9 +33,9 @@ async fn authorize(State(_pool): State<Pool>, Json(payload): Json<AuthPayload>) 
     if payload.client_id.is_empty() || payload.client_secret.is_empty() {
         return Err(AuthError::MissingCredentials);
     }
-    
+
     let maybe_auth_user = auth_repo::get_auth_user_by_username(&_pool, &payload.client_id).await;
-    
+
     if maybe_auth_user.is_none() {
         return Err(AuthError::WrongCredentials);
     }
@@ -55,9 +55,9 @@ async fn authorize(State(_pool): State<Pool>, Json(payload): Json<AuthPayload>) 
         }
     }
 
-    let user_public_id = user_repo::get_user_by_id(&_pool, auth_user.user_id).await;
+    let user = user_repo::get_user_by_id(&_pool, auth_user.user_id).await;
 
-    if user_public_id.is_none() {
+    if user.is_none() {
         return Err(AuthError::WrongCredentials);
     }
 
@@ -65,12 +65,12 @@ async fn authorize(State(_pool): State<Pool>, Json(payload): Json<AuthPayload>) 
     // TODO: in production you may not want to have such a long JWT life
     let exp = (Utc::now().naive_utc() + chrono::naive::Days::new(1)).timestamp() as usize;
     let claims = Claims {
-        user_public_id: user_public_id.unwrap().publicid,
+        user_public_id: user.unwrap().publicid,
         username: payload.client_id,
         exp,
-        permissions_bitwise: "".to_string(),
+        permissions_bitwise: auth_user.permissions_bitwise,
     };
-    
+
     // Create the authorization token
     let token = encode(&Header::default(), &claims, &KEYS.encoding).map_err(
         |_| AuthError::TokenCreation
