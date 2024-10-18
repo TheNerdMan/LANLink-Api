@@ -7,6 +7,7 @@ use deadpool_diesel::postgres::Pool;
 use crate::core::crypto::crypto_manager::generate_hash;
 use crate::core::errors::error::AppError;
 use crate::core::errors::error_handler::throw_error;
+use crate::core::permissions::permission_manager::PermissionsManager;
 use crate::features::auth::models::auth_user_model::AuthUserModel;
 use crate::features::auth::repos::auth_repo::create_or_update_auth_user;
 use crate::features::user::models::user_model::UserModel;
@@ -57,6 +58,7 @@ async fn username_sign_up(
         user_id: model.unwrap().id,
         username: _user_name_sign_up.username.clone(),
         password_hash: password_hash_result.unwrap(),
+        permissions_bitwise: PermissionsManager::get_default_permissions_bitwise(),
         created_at: Default::default(),
         updated_at: Default::default(),
     };
