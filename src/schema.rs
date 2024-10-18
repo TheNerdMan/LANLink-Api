@@ -8,7 +8,6 @@ diesel::table! {
         password_hash -> Varchar,
         created_at -> Timestamp,
         updated_at -> Timestamp,
-        permissions_bitwise -> Varchar,
     }
 }
 

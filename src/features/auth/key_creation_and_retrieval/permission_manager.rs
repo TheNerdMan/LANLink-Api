@@ -1,16 +1,13 @@
-use std::fmt::Display;
 use async_trait::async_trait;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 use crate::core::errors::auth_errors::AuthError;
-use crate::core::permissions::permission_constants::equipment_permissions::EQUIP_READ_PERMISSION;
-use crate::core::permissions::permission_constants::user_permissions::USER_READ_PERMISSION;
 use crate::features::auth::key_creation_and_retrieval::claims;
-use crate::features::auth::key_creation_and_retrieval::claims::Claims;
+
+
 
 #[derive(Debug)]
 pub struct PermissionsManager {
-    pub claims: Claims,
     pub admin_permissions: FeaturePermissions,
     pub user_permissions: FeaturePermissions,
     pub equipment_permissions: FeaturePermissions,
@@ -22,21 +19,14 @@ where S: Send + Sync {
     type Rejection = AuthError;
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-        let claims_result = Claims::from_request_parts(parts, _state).await;
+        let claims_result = claims::Claims::from_request_parts(parts, _state).await;
         let claims = match claims_result {
             Ok(claims) => claims,
             Err(_) => return Err(AuthError::InvalidToken),
         };
-        // extract permission_constants from claims permissions_bitwise
-        let mut permissions = PermissionsManager::from_permissions_bitwise(&claims.permissions_bitwise);
-        permissions.claims = claims;
+        // extract permissions from claims permissions_bitwise
+        let permissions = PermissionsManager::from_permissions_bitwise(&claims.permissions_bitwise);
         Ok(permissions)
-    }
-}
-
-impl Display for PermissionsManager {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_permissions_bitwise())
     }
 }
 
@@ -44,47 +34,20 @@ pub const PERMISSION_WIDTH: usize = 4;
 impl PermissionsManager {
     pub fn new() -> Self {
         PermissionsManager {
-            claims: Claims::new(),
             admin_permissions: FeaturePermissions::new(),
             user_permissions: FeaturePermissions::new(),
             equipment_permissions: FeaturePermissions::new(),
         }
     }
-    
-    pub fn Default() -> Self {
-        let mut default = PermissionsManager {
-            claims: Claims::new(),
-            admin_permissions: FeaturePermissions::new(),
-            user_permissions: FeaturePermissions::new(),
-            equipment_permissions: FeaturePermissions::new(),
-        };
-        
-        // Set default permissions every user should have on sign up
-        default.user_permissions.set_permission(USER_READ_PERMISSION);
-        default.equipment_permissions.set_permission(EQUIP_READ_PERMISSION);
-        
-        default
-    }
-    
-    pub fn get_default_permissions_bitwise() -> String {
-        PermissionsManager::Default().to_permissions_bitwise()
-    }
-    
     pub fn from_permissions_bitwise(permissions_bitwise: &String) -> Self {
         let permissions: Vec<_> = permissions_bitwise.split("-").collect();
         
-        if permissions.len() != 3 {
-            return PermissionsManager::new();
-        }
-        
         Some(PermissionsManager {
-            claims: Claims::new(),
             admin_permissions: FeaturePermissions::from_string(&permissions[0].to_string()).unwrap(),
             user_permissions: FeaturePermissions::from_string(&permissions[1].to_string()).unwrap(),
             equipment_permissions: FeaturePermissions::from_string(&permissions[2].to_string()).unwrap(),
         }).unwrap_or_else(|| PermissionsManager::new())
     }
-    
     pub fn to_permissions_bitwise(&self) -> String {
         let mut permissions_bitwise = String::new();
 
@@ -95,6 +58,7 @@ impl PermissionsManager {
         permissions_bitwise.push_str(format!("{:0width$b}", self.equipment_permissions.bits, width = PERMISSION_WIDTH).as_str());
 
         permissions_bitwise
+
     }
 }
 

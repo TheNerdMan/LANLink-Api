@@ -17,17 +17,6 @@ pub struct Claims {
     pub exp: usize,
 }
 
-impl Claims {
-    pub fn new() -> Self {
-        Claims {
-            username: String::default(),
-            user_public_id: Uuid::default(),
-            permissions_bitwise: String::default(),
-            exp: usize::default(),
-        }
-    }
-}
-
 #[async_trait]
 impl<S> FromRequestParts<S> for Claims where S: Send + Sync {
     type Rejection = AuthError;

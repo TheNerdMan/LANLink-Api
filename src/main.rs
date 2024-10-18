@@ -10,7 +10,7 @@ mod core;
 
 use features::auth::controllers::auth_controller;
 use features::protected::protected_controller;
-use features::auth::controllers::sign_up_controller;
+use features::sign_up::controllers::sign_up_controller;
 use features::user::controllers::user_controller;
 use features::equipment::controllers::equipment_controller;
 
