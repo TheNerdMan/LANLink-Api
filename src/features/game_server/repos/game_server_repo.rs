@@ -8,10 +8,10 @@ use uuid::Uuid;
 use crate::core::db_connection::db_connection::create_connection;
 use crate::core::errors::error::AppError;
 use diesel::prelude::*;
-use crate::schema::gameservers::dsl::*;
+use crate::schema::game_servers::dsl::*;
 use crate::features::game_server::models::game_server_model::GameServerModel;
-use crate::schema::gameservers::dsl::gameservers;
-use crate::schema::gameservers::{game_type, game_server_title};
+use crate::schema::game_servers::dsl::game_servers;
+use crate::schema::game_servers::{game_type, game_server_title};
 
 pub async fn get_all_game_servers(
     pool: &Pool,
@@ -22,7 +22,7 @@ pub async fn get_all_game_servers(
     };
 
     let result = conn.interact(|c| {
-        gameservers
+        game_servers
             .select(GameServerModel::as_select())
             .load::<GameServerModel>(c)
     })
@@ -50,7 +50,7 @@ pub async fn get_game_server_by_id(
     };
 
     let result = conn.interact(move |c| {
-        gameservers::table()
+        game_servers::table()
             .find(request_id)
             .select(GameServerModel::as_select())
             .first(c)
@@ -81,7 +81,7 @@ pub async fn get_game_server_by_public_id(
     };
 
     let result = conn.interact(move |c| {
-        gameservers::table()
+        game_servers::table()
             .filter(publicid.eq(public_id))
             .select(GameServerModel::as_select())
             .first(c)
@@ -110,7 +110,7 @@ pub async fn get_game_server_by_name(
     };
 
     let result = conn.interact(move |c| {
-        gameservers::table()
+        game_servers::table()
             .filter(game_server_title.eq(req_server_name))
             .select(GameServerModel::as_select())
             .first(c)
@@ -139,7 +139,7 @@ pub async fn get_all_game_servers_by_game_type(
     };
 
     let result = conn.interact(|c| {
-        gameservers
+        game_servers
             .select(GameServerModel::as_select())
             .filter(game_type.eq(req_game_type))
             .load::<GameServerModel>(c)
@@ -178,7 +178,7 @@ async fn create_game_server(
     };
 
     let result = conn.interact(move |c| {
-        diesel::insert_into(gameservers::table())
+        diesel::insert_into(game_servers::table())
             .values(game_server_model.create_new_game_server_for_db())
             .returning(GameServerModel::as_returning())
             .get_result(c)
@@ -207,7 +207,7 @@ async fn update_game_server(
     };
 
     let result = conn.interact(move |c| {
-        diesel::update(gameservers::table())
+        diesel::update(game_servers::table())
             .filter(id.eq(game_server_model.id))
             .set(game_server_model.create_update_game_server_for_db())
             .returning(GameServerModel::as_returning())
@@ -227,7 +227,7 @@ async fn update_game_server(
     }
 }
 
-pub async fn drop_game_server(
+pub async fn delete_game_server(
     pool: &Pool,
     request_id: i32,
 ) -> Result<usize, AppError> {
@@ -238,7 +238,7 @@ pub async fn drop_game_server(
 
     let result = conn.interact(move |c| {
         // Here, execute returns a QueryResult<usize>
-        diesel::delete(gameservers::table()
+        diesel::delete(game_servers::table()
             .filter(id.eq(request_id))) // Ensure you're referencing gameservers::id
             .execute(c) // Execute the delete operation
     })

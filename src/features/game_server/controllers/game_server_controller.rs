@@ -12,6 +12,7 @@ use crate::features::game_server::dtos::game_server_dto::GameServerDto;
 use crate::features::game_server::models::game_server_model::GameServerModel;
 use crate::features::game_server::repos::game_server_repo;
 use crate::features::game_server::repos::game_server_repo::{create_or_update_game_server, get_game_server_by_public_id};
+use crate::schema::game_servers::game_type;
 
 pub fn router() -> Router<Pool> {
     Router::new()
@@ -19,18 +20,20 @@ pub fn router() -> Router<Pool> {
         .route("/api/v1/game_server/unregister/:server_public_id", post(unregister_server))
 }
 
+pub struct CreateGameServerPayload{
+    pub game_server_title: String,
+    pub game_type: String,
+}
 #[axum::debug_handler]
 async fn register_server(
     State(_pool): State<Pool>,
-    Path((server_name, game_type)): Path<(String, String)>
+    Json(payload): Json<CreateGameServerPayload>,
 ) -> Result<Json<String>, AppError>{
-    if server_name.is_empty() || game_type.is_empty(){
+    if payload.game_server_title.is_empty() || payload.game_type.is_empty() {
         return Err(AppError::BadRequestError(String::from("server_name or game_type cannot be empty")));
     }
 
-    let mut model = GameServerModel::new();
-    model.game_server_title = server_name;
-    model.game_type = game_type;
+    let model = GameServerModel::from_create_game_server_paylaod(payload);
 
     let result: Option<GameServerModel> = create_or_update_game_server(&_pool, model).await;
 
@@ -59,7 +62,7 @@ async fn unregister_server(State(_pool): State<Pool>, Path(server_public_id): Pa
         return Err(AppError::DatabaseQueryError(String::from("We were unable to find your server record")));
     }
 
-    let result = game_server_repo::drop_game_server(&_pool, model.unwrap().id).await;
+    let result = game_server_repo::delete_game_server(&_pool, model.unwrap().id).await;
     if result.is_err(){
         return Err(AppError::DatabaseQueryError(String::from("We were unable to delete your server record")));
     }

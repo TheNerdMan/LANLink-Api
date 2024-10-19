@@ -1,9 +1,10 @@
 use diesel::{AsChangeset, Insertable, Queryable, Selectable};
 use serde::Serialize;
 use uuid::Uuid;
+use crate::features::game_server::controllers::game_server_controller::CreateGameServerPayload;
 
 #[derive(Queryable, Selectable, Serialize)]
-#[diesel(table_name = crate::schema::gameservers)]
+#[diesel(table_name = crate::schema::game_servers)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct GameServerModel {
     pub id: i32,
@@ -13,7 +14,7 @@ pub struct GameServerModel {
 }
 
 #[derive(Insertable)]
-#[diesel(table_name = crate::schema::gameservers)]
+#[diesel(table_name = crate::schema::game_servers)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct NewGameServerModel{
     pub publicid: Uuid,
@@ -22,7 +23,7 @@ pub struct NewGameServerModel{
 }
 
 #[derive(AsChangeset)]
-#[diesel(table_name = crate::schema::gameservers)]
+#[diesel(table_name = crate::schema::game_servers)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct UpdateGameServerModel{
     pub id: i32,
@@ -38,6 +39,15 @@ impl GameServerModel{
             publicid: Uuid::new_v4(),
             game_server_title: String::new(),
             game_type: String::new(),
+        }
+    }
+
+    pub fn from_create_game_server_paylaod(payload: CreateGameServerPayload) -> Self{
+        GameServerModel{
+            id: 0,
+            publicid: Uuid::new_v4(),
+            game_server_title: payload.game_server_title.clone(),
+            game_type: payload.game_type.clone(),
         }
     }
 
