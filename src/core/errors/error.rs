@@ -33,7 +33,7 @@ impl AppError {
         let mut hasher = Sha1::new();
         hasher.update(Utc::now().to_string());
         let error_code =  format!("{:x}", hasher.finalize());
-        
+
         AppError {
             error_type,
             message,

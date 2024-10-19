@@ -21,6 +21,15 @@ diesel::table! {
 }
 
 diesel::table! {
+    game_servers (id) {
+        id -> Int4,
+        publicid -> Uuid,
+        game_server_title -> Varchar,
+        game_type -> Varchar,
+    }
+}
+
+diesel::table! {
     users (id) {
         id -> Int4,
         publicid -> Uuid,
@@ -37,5 +46,6 @@ diesel::joinable!(auth_users -> users (user_id));
 diesel::allow_tables_to_appear_in_same_query!(
     auth_users,
     equipments,
+    game_servers,
     users,
 );
