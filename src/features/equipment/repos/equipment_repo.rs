@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 // internal uses
 use crate::core::db_connection::db_connection::create_connection;
-use crate::core::errors::error::AppError;
+use crate::core::errors::error::{AppError, AppErrorEnum};
 use crate::features::equipment::models::equipment_model::EquipmentModel;
 use crate::schema::equipments::dsl::*;
 
@@ -25,7 +25,7 @@ pub async fn get_all_equipment(
             .load::<EquipmentModel>(c)
     })
     .await
-    .map_err(|e| AppError::DatabaseQueryError(e.to_string()));
+    .map_err(|e| AppError::new(AppErrorEnum::DatabaseQueryError, e.to_string()));
 
     match result {
         Ok(equipment) => {
@@ -54,7 +54,7 @@ pub async fn get_equipment_by_id(
             .first(c)
     })
     .await
-    .map_err(|e| AppError::DatabaseQueryError(e.to_string()));
+    .map_err(|e| AppError::new(AppErrorEnum::DatabaseQueryError, e.to_string()));
 
     match result {
         Ok(equipment) => {
@@ -83,7 +83,7 @@ pub async fn get_equipment_by_public_id(
             .first(c)
     })
     .await
-    .map_err(|e| AppError::DatabaseQueryError(e.to_string()));
+    .map_err(|e| AppError::new(AppErrorEnum::DatabaseQueryError, e.to_string()));
 
     match result {
         Ok(equipment) => {
