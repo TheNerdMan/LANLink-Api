@@ -1,18 +1,14 @@
 use axum::{extract::Path, response::Json, routing::post, Router};
 use axum::extract::{State};
 use axum::http::StatusCode;
-use axum::response::IntoResponse;
 use deadpool_diesel::postgres::Pool;
-use diesel::query_dsl::InternalJoinDsl;
 use uuid::Uuid;
 
 use crate::core::errors::error::AppError;
-use crate::core::errors::user_errors::UserError;
 use crate::features::game_server::dtos::game_server_dto::GameServerDto;
 use crate::features::game_server::models::game_server_model::GameServerModel;
 use crate::features::game_server::repos::game_server_repo;
 use crate::features::game_server::repos::game_server_repo::{create_or_update_game_server, get_game_server_by_public_id};
-use crate::schema::game_servers::game_type;
 
 pub fn router() -> Router<Pool> {
     Router::new()
