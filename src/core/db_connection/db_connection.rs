@@ -1,5 +1,5 @@
 use deadpool_diesel::postgres::{Object, Pool};
-use crate::core::errors::error::AppError;
+use crate::core::errors::error::{AppError, AppErrorEnum};
 use crate::core::errors::error_handler::throw_error;
 
 /// Attempts to retrieve a connection from the provided `Pool` (which should be set up on app launch).
@@ -49,7 +49,7 @@ pub async fn create_connection(pool: &Pool) -> Option<Object> {
         Ok(conn) => Some(conn),
         Err(e) => {
             // Handle the error by logging or throwing it using our custom error handler
-            throw_error(AppError::DatabaseConnectionError(e.to_string()));
+            throw_error(AppError::new(AppErrorEnum::DatabaseConnectionError, e.to_string()));
             None
         }
     }

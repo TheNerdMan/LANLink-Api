@@ -5,7 +5,6 @@ use axum::http::request::Parts;
 use crate::core::errors::auth_errors::AuthError;
 use crate::core::permissions::permission_constants::equipment_permissions::EQUIP_READ_PERMISSION;
 use crate::core::permissions::permission_constants::user_permissions::USER_READ_PERMISSION;
-use crate::features::auth::key_creation_and_retrieval::claims;
 use crate::features::auth::key_creation_and_retrieval::claims::Claims;
 
 #[derive(Debug)]
@@ -28,7 +27,11 @@ where S: Send + Sync {
             Err(_) => return Err(AuthError::InvalidToken),
         };
         // extract permission_constants from claims permissions_bitwise
-        let mut permissions = PermissionsManager::from_permissions_bitwise(&claims.permissions_bitwise);
+        let  permissions_option = PermissionsManager::from_permissions_bitwise(&claims.permissions_bitwise);
+        let mut permissions = match permissions_option {
+            Some(permissions) => permissions,
+            None => return Err(AuthError::InvalidToken),
+        };
         permissions.claims = claims;
         Ok(permissions)
     }
@@ -70,11 +73,11 @@ impl PermissionsManager {
         PermissionsManager::Default().to_permissions_bitwise()
     }
 
-    pub fn from_permissions_bitwise(permissions_bitwise: &String) -> Self {
+    pub fn from_permissions_bitwise(permissions_bitwise: &String) -> Option<Self> {
         let permissions: Vec<_> = permissions_bitwise.split("-").collect();
 
         if permissions.len() != 3 {
-            return PermissionsManager::new();
+            return None;
         }
 
         Some(PermissionsManager {
@@ -82,7 +85,7 @@ impl PermissionsManager {
             admin_permissions: FeaturePermissions::from_string(&permissions[0].to_string()).unwrap(),
             user_permissions: FeaturePermissions::from_string(&permissions[1].to_string()).unwrap(),
             equipment_permissions: FeaturePermissions::from_string(&permissions[2].to_string()).unwrap(),
-        }).unwrap_or_else(|| PermissionsManager::new())
+        })
     }
 
     pub fn to_permissions_bitwise(&self) -> String {
@@ -108,14 +111,19 @@ impl FeaturePermissions {
         FeaturePermissions { bits: 0 }
     }
 
-    fn from_string(permissions_bitwise: &String) -> Result<Self, &'static str> {
+    fn from_string(permissions_bitwise: &String) -> Result<Self, String> {
+        if permissions_bitwise.len() != PERMISSION_WIDTH {
+            return Err(format!("Invalid permission string format. Current binary length is {}.", PERMISSION_WIDTH));
+        }
+
         if let Ok(bits) = u32::from_str_radix(permissions_bitwise, 2) {
             Ok(FeaturePermissions { bits })
         } else {
-            Err("Invalid permission string format. Only binary strings allowed.")
+            Err(String::from("Invalid permission string format. Only binary strings allowed."))
         }
     }
 
+    
 
     pub fn set_permission(&mut self, permission: u32) {
         self.bits |= permission;
@@ -141,6 +149,8 @@ impl FeaturePermissions {
         (self.bits & group) == group
     }
 
+    pub fn any_permission(&self) -> bool { self.bits != 0 }
+    
     pub fn clear_permissions(&mut self) {
         self.bits = 0;
     }
