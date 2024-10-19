@@ -24,11 +24,6 @@ pub enum AppErrorEnum {
     InternalServerError,
     BadRequestError,
     UnknownError,
-    MissingField,
-    UserNotFound,
-    UserCreationFailed,
-    UserUpdateFailed,
-    InvalidParameter,
     UserMismatch,
     InsufficientPermissions,
 }
@@ -57,12 +52,6 @@ impl AppError {
             AppErrorEnum::InternalServerError => format!("Internal Server Error [{}]: {1}", self.error_code, self.message),
             AppErrorEnum::BadRequestError => format!("Bad Request Error [{}]: {1}", self.error_code, self.message),
             AppErrorEnum::UnknownError => format!("Unknown Error [{}]: {1}", self.error_code, self.message),
-
-            AppErrorEnum::MissingField => format!("Missing Field [{}]: {1}", self.error_code, self.message),
-            AppErrorEnum::UserNotFound => format!("User Not Found [{}]: {1}", self.error_code, self.message),
-            AppErrorEnum::UserCreationFailed => format!("User Creation Failed [{}]: {1}", self.error_code, self.message),
-            AppErrorEnum::UserUpdateFailed => format!("User Update Failed [{}]: {1}", self.error_code, self.message),
-            AppErrorEnum::InvalidParameter => format!("Invalid Parameter [{}]: {1}", self.error_code, self.message),
             AppErrorEnum::UserMismatch => format!("User Mismatch [{}]: {1}", self.error_code, self.message),
             AppErrorEnum::InsufficientPermissions => format!("Insufficient Permissions [{}]: {1}", self.error_code, self.message),
         }
@@ -81,12 +70,6 @@ impl IntoResponse for AppError {
             AppErrorEnum::InternalServerError => (StatusCode::INTERNAL_SERVER_ERROR, self.error_code),
             AppErrorEnum::BadRequestError => (StatusCode::BAD_REQUEST, self.error_code),
             AppErrorEnum::UnknownError => (StatusCode::INTERNAL_SERVER_ERROR, self.error_code),
-
-            AppErrorEnum::MissingField => (StatusCode::BAD_REQUEST, self.error_code),
-            AppErrorEnum::UserNotFound => (StatusCode::NO_CONTENT, self.error_code),
-            AppErrorEnum::UserCreationFailed => (StatusCode::INTERNAL_SERVER_ERROR, self.error_code),
-            AppErrorEnum::UserUpdateFailed => (StatusCode::INTERNAL_SERVER_ERROR, self.error_code),
-            AppErrorEnum::InvalidParameter => (StatusCode::BAD_REQUEST, self.error_code),
             AppErrorEnum::UserMismatch => (StatusCode::UNAUTHORIZED, self.error_code),
             AppErrorEnum::InsufficientPermissions => (StatusCode::UNAUTHORIZED, self.error_code),
         };

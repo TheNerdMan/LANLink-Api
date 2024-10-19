@@ -5,7 +5,6 @@ use axum::http::request::Parts;
 use crate::core::errors::auth_errors::AuthError;
 use crate::core::permissions::permission_constants::equipment_permissions::EQUIP_READ_PERMISSION;
 use crate::core::permissions::permission_constants::user_permissions::USER_READ_PERMISSION;
-use crate::features::auth::key_creation_and_retrieval::claims;
 use crate::features::auth::key_creation_and_retrieval::claims::Claims;
 
 #[derive(Debug)]

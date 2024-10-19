@@ -26,7 +26,7 @@ async fn handle_get_by_public_id(_pool: Pool, public_id: Uuid) -> Result<UserDto
     if option.is_some(){
         Ok(UserDto::from_model(&option.unwrap()))
     }else {
-        Err(AppError::new(AppErrorEnum::UserNotFound,String::from("User not found")))
+        Err(AppError::new(AppErrorEnum::NotFoundError,String::from("User not found")))
     }
 }
 
@@ -35,7 +35,7 @@ async fn handle_get_by_username(_pool: Pool, username: String) -> Result<UserDto
     if option.is_some(){
         Ok(UserDto::from_model(&option.unwrap()))
     }else {
-        Err(AppError::new(AppErrorEnum::UserNotFound,String::from("User not found")))
+        Err(AppError::new(AppErrorEnum::NotFoundError,String::from("User not found")))
     }
 }
 
@@ -46,7 +46,7 @@ async fn handle_get_by_discord_username(_pool: Pool, discord_username: String) -
     if option.is_some(){
         Ok(UserDto::from_model(&option.unwrap()))
     }else {
-        Err(AppError::new(AppErrorEnum::UserNotFound,String::from("User not found")))
+        Err(AppError::new(AppErrorEnum::NotFoundError,String::from("User not found")))
     }
 }
 
@@ -55,7 +55,7 @@ async fn handle_get_by_steam_url(_pool: Pool, steam_url: String) -> Result<UserD
     if option.is_some(){
         Ok(UserDto::from_model(&option.unwrap()))
     }else {
-        Err(AppError::new(AppErrorEnum::UserNotFound,String::from("User not found")))
+        Err(AppError::new(AppErrorEnum::NotFoundError,String::from("User not found")))
     }
 }
 async fn get_user(State(_pool): State<Pool>, claims: Claims, Path((get_type, value)): Path<(String, String)>) -> Result<Json<UserDto>, AppError> {
@@ -73,7 +73,7 @@ async fn get_user(State(_pool): State<Pool>, claims: Claims, Path((get_type, val
 
 
     if get_type.is_empty() || value.is_empty() {
-        return Err(AppError::new(AppErrorEnum::MissingField, String::from("MissingField")));
+        return Err(AppError::new(AppErrorEnum::BadRequestError, String::from("MissingField")));
     }
 
     if get_type == "username" {
@@ -147,11 +147,11 @@ async fn edit_user(State(_pool): State<Pool>, claims: Claims, Json(payload): Jso
         || payload.new_last_name.is_empty()
         || payload.new_discord_username.is_empty()
         || payload.new_steam_url.is_empty(){
-        return Err(AppError::new(AppErrorEnum::MissingField, String::from("Missing Field")));
+        return Err(AppError::new(AppErrorEnum::BadRequestError, String::from("Missing Field")));
     }
 
     let mut user = get_user_by_public_id(&_pool, claims.user_public_id).await
-        .ok_or(AppError::new(AppErrorEnum::UserNotFound, String::from("User not found")))?;
+        .ok_or(AppError::new(AppErrorEnum::BadRequestError, String::from("User not found")))?;
 
     let (username_check, discord_check, steam_check) = tokio::join!(
         get_user_by_username(&_pool, payload.new_username.clone()),
@@ -174,7 +174,7 @@ async fn edit_user(State(_pool): State<Pool>, claims: Claims, Json(payload): Jso
     user.steam_url = payload.new_steam_url;
 
     if user_repo::create_or_update_user(&_pool, user).await.is_none(){
-        return Err(AppError::new(AppErrorEnum::UserUpdateFailed, String::from("User update failed")));
+        return Err(AppError::new(AppErrorEnum::InternalServerError, String::from("User update failed")));
     }
 
     Ok(Json("User updated").into_response())

@@ -43,7 +43,7 @@ async fn update_auth_user_permissions(
     let auth_user_option = auth_repo::get_auth_user_by_user_public_id(&_pool, &dto.user_public_id).await;
     
     if auth_user_option.is_none() {
-        return Err(AppError::new(AppErrorEnum::UserNotFound, String::from("User not found")))
+        return Err(AppError::new(AppErrorEnum::NotFoundError, String::from("User not found")))
     }
     
     let mut auth_user = auth_user_option.unwrap();
