@@ -1,7 +1,6 @@
 use diesel::{AsChangeset, Insertable, Queryable, Selectable};
 use serde::Serialize;
 use uuid::Uuid;
-use crate::features::game_server::controllers::game_server_controller::CreateGameServerPayload;
 use crate::features::game_server::dtos::game_server_dto::GameServerDto;
 
 #[derive(Queryable, Selectable, Serialize)]

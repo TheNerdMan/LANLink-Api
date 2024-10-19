@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 // internal uses
 use crate::core::db_connection::db_connection::create_connection;
-use crate::core::errors::error::AppError;
+use crate::core::errors::error::{AppError, AppErrorEnum};
 use diesel::prelude::*;
 use crate::schema::game_servers::dsl::*;
 use crate::features::game_server::models::game_server_model::GameServerModel;
@@ -27,7 +27,7 @@ pub async fn get_all_game_servers(
             .load::<GameServerModel>(c)
     })
         .await
-        .map_err(|e| AppError::DatabaseQueryError(e.to_string()));
+        .map_err(|e| AppError::new(AppErrorEnum::DatabaseQueryError, e.to_string()));
 
     match result {
         Ok(server) => {
@@ -56,7 +56,7 @@ pub async fn get_game_server_by_id(
             .first(c)
     })
         .await
-        .map_err(|e| AppError::DatabaseQueryError(e.to_string()));
+        .map_err(|e| AppError::new(AppErrorEnum::DatabaseQueryError, e.to_string()));
 
     match result {
         Ok(server) => {
@@ -87,7 +87,7 @@ pub async fn get_game_server_by_public_id(
             .first(c)
     })
         .await
-        .map_err(|e| AppError::DatabaseQueryError(e.to_string()));
+        .map_err(|e| AppError::new(AppErrorEnum::DatabaseQueryError, e.to_string()));
 
     match result {
         Ok(server) => {
@@ -116,7 +116,7 @@ pub async fn get_game_server_by_name(
             .first(c)
     })
         .await
-        .map_err(|e| AppError::DatabaseQueryError(e.to_string()));
+        .map_err(|e| AppError::new(AppErrorEnum::DatabaseQueryError, e.to_string()));
 
     match result {
         Ok(server) => {
@@ -145,7 +145,7 @@ pub async fn get_all_game_servers_by_game_type(
             .load::<GameServerModel>(c)
     })
         .await
-        .map_err(|e| AppError::DatabaseQueryError(e.to_string()));
+        .map_err(|e| AppError::new(AppErrorEnum::DatabaseQueryError, e.to_string()));
 
     match result {
         Ok(server) => {
@@ -184,7 +184,7 @@ async fn create_game_server(
             .get_result(c)
     })
         .await
-        .map_err(|e| AppError::DatabaseQueryError(e.to_string()));
+        .map_err(|e| AppError::new(AppErrorEnum::DatabaseQueryError, e.to_string()));
 
     match result {
         Ok(server) => {
@@ -214,7 +214,7 @@ async fn update_game_server(
             .get_result(c)
     })
         .await
-        .map_err(|e| AppError::DatabaseQueryError(e.to_string()));
+        .map_err(|e| AppError::new(AppErrorEnum::DatabaseQueryError, e.to_string()));
 
     match result {
         Ok(server) => {
@@ -233,7 +233,7 @@ pub async fn delete_game_server(
 ) -> Result<usize, AppError> {
     let conn = match create_connection(pool).await {
         Some(conn) => conn,
-        None => return Err(AppError::DatabaseQueryError(format!("Unable to establish database connection"))),
+        None => return Err(AppError::new(AppErrorEnum::DatabaseQueryError, format!("Unable to establish database connection"))),
     };
 
     let result = conn.interact(move |c| {
@@ -243,7 +243,7 @@ pub async fn delete_game_server(
             .execute(c) // Execute the delete operation
     })
         .await
-        .map_err(|e| AppError::DatabaseQueryError(e.to_string()))?;
+        .map_err(|e| AppError::new(AppErrorEnum::DatabaseQueryError, e.to_string()))?;
 
     Ok(result.unwrap())
 }
