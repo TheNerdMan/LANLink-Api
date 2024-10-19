@@ -19,21 +19,16 @@ pub fn router() -> Router<Pool> {
         .route("/api/v1/game_server/register/:server_name/:game_type", post(register_server))
         .route("/api/v1/game_server/unregister/:server_public_id", post(unregister_server))
 }
-
-pub struct CreateGameServerPayload{
-    pub game_server_title: String,
-    pub game_type: String,
-}
 #[axum::debug_handler]
 async fn register_server(
     State(_pool): State<Pool>,
-    Json(payload): Json<CreateGameServerPayload>,
+    Json(payload): Json<GameServerDto>,
 ) -> Result<Json<String>, AppError>{
     if payload.game_server_title.is_empty() || payload.game_type.is_empty() {
         return Err(AppError::BadRequestError(String::from("server_name or game_type cannot be empty")));
     }
 
-    let model = GameServerModel::from_create_game_server_paylaod(payload);
+    let model = GameServerModel::new_from_dto(payload);
 
     let result: Option<GameServerModel> = create_or_update_game_server(&_pool, model).await;
 

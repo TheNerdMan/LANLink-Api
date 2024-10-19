@@ -2,6 +2,7 @@ use diesel::{AsChangeset, Insertable, Queryable, Selectable};
 use serde::Serialize;
 use uuid::Uuid;
 use crate::features::game_server::controllers::game_server_controller::CreateGameServerPayload;
+use crate::features::game_server::dtos::game_server_dto::GameServerDto;
 
 #[derive(Queryable, Selectable, Serialize)]
 #[diesel(table_name = crate::schema::game_servers)]
@@ -42,12 +43,12 @@ impl GameServerModel{
         }
     }
 
-    pub fn from_create_game_server_paylaod(payload: CreateGameServerPayload) -> Self{
+    pub fn new_from_dto(dto: GameServerDto) -> Self{
         GameServerModel{
             id: 0,
             publicid: Uuid::new_v4(),
-            game_server_title: payload.game_server_title.clone(),
-            game_type: payload.game_type.clone(),
+            game_server_title: dto.game_server_title.clone(),
+            game_type: dto.game_type.clone(),
         }
     }
 
