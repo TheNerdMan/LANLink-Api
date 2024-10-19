@@ -6,6 +6,7 @@ use axum::Json;
 use axum::response::{IntoResponse, Response};
 use serde_json::json;
 use crate::core::errors::auth_errors::AuthError;
+use crate::core::errors::user_errors::UserError;
 
 pub enum AppError {
     IoError(std::io::Error),    // Standard IO error
@@ -48,3 +49,23 @@ impl Debug for AppError {
 }
 
 impl Error for AppError {}
+
+impl IntoResponse for AppError {
+    fn into_response(self) -> Response {
+        let (status, error_message) = match self {
+            AppError::IoError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg.to_string()),    // Standard IO error
+            AppError::DatabaseQueryError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg.to_string()),
+            AppError::DatabaseConnectionError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg.to_string()),
+            AppError::InvalidInputError(msg) => (StatusCode::BAD_REQUEST, msg.to_string()),
+            AppError::NotFoundError(msg) => (StatusCode::NO_CONTENT, msg.to_string()),
+            AppError::UnauthorizedError(msg) => (StatusCode::UNAUTHORIZED, msg.to_string()),
+            AppError::InternalServerError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg.to_string()),
+            AppError::BadRequestError(msg) => (StatusCode::BAD_REQUEST, msg.to_string()),
+            AppError::UnknownError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg.to_string()),
+        };
+        let body = Json(json!({
+            "error": error_message,
+        }));
+        (status, body).into_response()
+    }
+}

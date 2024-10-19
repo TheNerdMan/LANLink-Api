@@ -13,6 +13,7 @@ use features::protected::protected_controller;
 use features::auth::controllers::sign_up_controller;
 use features::user::controllers::user_controller;
 use features::equipment::controllers::equipment_controller;
+use features::game_server::controllers::game_server_controller;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations/");
 
@@ -28,6 +29,7 @@ async fn main() {
         .merge(sign_up_controller::router())
         .merge(equipment_controller::router())
         .merge(user_controller::router())
+        .merge(game_server_controller::router())
         .with_state(db_pool);
 
 
