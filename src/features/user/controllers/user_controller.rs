@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use crate::core::errors::error::{AppError, AppErrorEnum};
 use crate::core::permissions::permission_constants::user_permissions::*;
 use crate::core::permissions::permission_manager::PermissionsManager;
@@ -29,16 +30,16 @@ async fn create_user(
     if !permission {
         return (StatusCode::UNAUTHORIZED, "InsufficientPermissions").into_response();
     }
-    
-    let mut user = get_user_by_username(&_pool, username.clone()).await;
+
+    let user = get_user_by_username(&_pool, username.clone()).await;
     if user.is_some(){
         return (StatusCode::UNAUTHORIZED, "User already exists").into_response();
     }
 
-    let mut user = UserModel::new();
-    user.username = username.clone();
+    let mut new_user = UserModel::new();
+    new_user.username = username.clone();
 
-    let model = user_repo::create_or_update_user(&_pool, user).await;
+    let model = user_repo::create_or_update_user(&_pool, new_user).await;
 
     (StatusCode::OK, Json(model)).into_response()
 }
@@ -90,61 +91,56 @@ async fn edit_user(State(_pool): State<Pool>, permissions: PermissionsManager, J
 }
 
 
-async fn get_user(State(_pool): State<Pool>, permissions: PermissionsManager, Path((get_type, value)): Path<(String, String)>) -> Result<Json<UserDto>, AppError> {
+enum GetUserType {
+    Username,
+    PublicId,
+    DiscordUsername,
+    SteamUrl,
+}
 
+impl FromStr for GetUserType {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "username" => Ok(GetUserType::Username),
+            "public_id" => Ok(GetUserType::PublicId),
+            "discord_username" => Ok(GetUserType::DiscordUsername),
+            "steam_url" => Ok(GetUserType::SteamUrl),
+            _ => Err(()),
+        }
+    }
+}
+
+async fn get_user(State(_pool): State<Pool>, permissions: PermissionsManager, Path((get_type, value)): Path<(String, String)>) -> Result<Json<UserDto>, AppError> {
     let permission_option = permissions.user_permissions.has_permission(USER_READ_PERMISSION);
 
     if !permission_option { // Yes im aware default includes the read permission
         return Err(AppError::new(AppErrorEnum::InsufficientPermissions, String::from("InsufficientPermissions")))
     }
-
-
+    
     if get_type.is_empty() || value.is_empty() {
         return Err(AppError::new(AppErrorEnum::BadRequestError, String::from("MissingField")));
     }
+    
+    get_user_by_type(_pool, &get_type, value).await
+}
 
-    if get_type == "username" {
-        let result = get_by_username(_pool, value).await;
-        if result.is_ok(){
-            let user = result?;
-            return Ok(Json(user));
-        }else{
-            return Ok(Json(UserDto::from_model(&UserModel::new())))
-        }
-    }
 
-    if get_type == "public_id" {
-        let id_result = Uuid::parse_str(&value);
-        if id_result.is_ok(){
-            let result = get_by_public_id(_pool, id_result.unwrap()).await;
-            if result.is_ok(){
-                let user = result?;
-                return Ok(Json(user));
-            }else{
-                return Ok(Json(UserDto::from_model(&UserModel::new())))
-            }
-        }
+async fn get_user_by_type(_pool: Pool, get_type: &str, value: String) -> Result<Json<UserDto>, AppError> {
+    let user_type = GetUserType::from_str(get_type).map_err(|_| AppError::new(AppErrorEnum::BadRequestError, String::from("MissingField")))?;
+    
+    let result = match user_type {
+        GetUserType::Username => get_by_username(_pool, value).await,
+        GetUserType::PublicId => {
+            let id = Uuid::parse_str(&value).map_err(|_| AppError::new(AppErrorEnum::BadRequestError, String::from("Invalid UUID")))?;
+            get_by_public_id(_pool, id).await
+        },
+        GetUserType::DiscordUsername => get_by_discord_username(_pool, value).await,
+        GetUserType::SteamUrl => get_by_steam_url(_pool, value).await,
+    };
 
-    }
-
-    if get_type == "discord_username" {
-        let result = get_by_discord_username(_pool, value).await;
-        if result.is_ok(){
-            let user = result?;
-            return Ok(Json(user));
-        }else{
-            return Ok(Json(UserDto::from_model(&UserModel::new())))
-        }
-    }
-
-    if get_type == "steam_url" {
-        let result = get_by_steam_url(_pool, value).await;
-        if result.is_ok(){
-            let user = result?;
-            return Ok(Json(user));
-        }else{
-            return Ok(Json(UserDto::from_model(&UserModel::new())))
-        }
-    }
-    Ok(Json(UserDto::from_model(&UserModel::new())))
+    Ok(Json(result
+        .map(|user| user)
+        .unwrap_or_else(|_| UserDto::from_model(&UserModel::new()))))
 }
