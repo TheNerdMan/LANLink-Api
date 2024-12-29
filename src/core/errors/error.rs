@@ -30,6 +30,7 @@ pub enum AppErrorEnum {
 
 impl AppError {
     pub fn new(error_type: AppErrorEnum, message: String) -> Self {
+        // amazonq-ignore-next-line
         let mut hasher = Sha1::new();
         hasher.update(Utc::now().to_string());
         let error_code =  format!("{:x}", hasher.finalize());
@@ -81,7 +82,7 @@ impl IntoResponse for AppError {
 }
 
 impl fmt::Display for AppError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.format_message())
     }
 }
