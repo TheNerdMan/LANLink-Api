@@ -12,7 +12,8 @@ mod schema;
 mod core;
 
 use features::auth::controllers::auth_controller;
-use features::protected::protected_controller;
+use features::debug::controllers::protected_controller;
+use features::debug::controllers::debug_controller;
 use features::admin::controllers::admin_permission_controller;
 use features::auth::controllers::sign_up_controller;
 use features::user::controllers::user_controller;
@@ -32,15 +33,22 @@ async fn main() {
 
     run_migrations(&db_pool).await;
 
-    let app = Router::new()
+    let mut app_builder = Router::new()
         .merge(auth_controller::router())
-        .merge(protected_controller::router())
         .merge(sign_up_controller::router())
         .merge(admin_permission_controller::router())
         .merge(equipment_controller::router())
         .merge(user_controller::router())
-        .merge(game_server_controller::router())
-        .with_state(db_pool)
+        .merge(game_server_controller::router());
+    
+    if cfg!(debug_assertions) {
+        // Merge additional controller only in debug mode
+        app_builder = app_builder
+            .merge(debug_controller::router())
+            .merge(protected_controller::router());
+    }
+
+    let app = app_builder.with_state(db_pool)
         .layer(middleware_stack);
 
 
