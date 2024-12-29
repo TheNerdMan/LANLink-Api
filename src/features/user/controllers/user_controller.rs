@@ -1,18 +1,18 @@
-use axum::{extract::Path, response::Json, routing::post, Router};
-use axum::extract::{State};
-use axum::http::StatusCode;
-use axum::response::IntoResponse;
-use deadpool_diesel::postgres::Pool;
-use serde::Deserialize;
-use uuid::Uuid;
 use crate::core::errors::error::{AppError, AppErrorEnum};
 use crate::core::permissions::permission_constants::user_permissions::*;
 use crate::core::permissions::permission_manager::PermissionsManager;
-use crate::features::auth::key_creation_and_retrieval::claims::Claims;
-use crate::features::user::repos::user_repo::{get_user_by_discord, get_user_by_public_id, get_user_by_steam, get_user_by_username};
+use crate::features::user::dtos::user_dto::UserDto;
+use crate::features::user::dtos::edit_user_payload_dto::EditUserPayloadDto;
+use crate::features::user::services::user_service::{get_by_discord_username, get_by_public_id, get_by_steam_url, get_by_username};
 use crate::features::user::models::user_model::UserModel;
 use crate::features::user::repos::user_repo;
-use crate::features::user::dtos::user_dto::UserDto;
+use crate::features::user::repos::user_repo::{get_user_by_discord, get_user_by_public_id, get_user_by_steam, get_user_by_username};
+use axum::extract::State;
+use axum::http::StatusCode;
+use axum::response::IntoResponse;
+use axum::{extract::Path, response::Json, routing::post, Router};
+use deadpool_diesel::postgres::Pool;
+use uuid::Uuid;
 
 pub fn router() -> Router<Pool> {
     Router::new()
@@ -21,124 +21,33 @@ pub fn router() -> Router<Pool> {
         .route("/api/v1/user/get/:get_type/:value", post(get_user))
 }
 
-async fn handle_get_by_public_id(_pool: Pool, public_id: Uuid) -> Result<UserDto, AppError> {
-    let option = get_user_by_public_id(&_pool, public_id).await;
-    if option.is_some(){
-        Ok(UserDto::from_model(&option.unwrap()))
-    }else {
-        Err(AppError::new(AppErrorEnum::NotFoundError,String::from("User not found")))
+#[axum::debug_handler]
+async fn create_user(
+    State(_pool): State<Pool>, permissions: PermissionsManager, Path(username): Path<String>) -> impl IntoResponse {
+
+    let permission = permissions.user_permissions.has_permission(USER_WRITE_PERMISSION);
+    if !permission {
+        return (StatusCode::UNAUTHORIZED, "InsufficientPermissions").into_response();
     }
-}
-
-async fn handle_get_by_username(_pool: Pool, username: String) -> Result<UserDto, AppError> {
-    let option = get_user_by_username(&_pool, username).await;
-    if option.is_some(){
-        Ok(UserDto::from_model(&option.unwrap()))
-    }else {
-        Err(AppError::new(AppErrorEnum::NotFoundError,String::from("User not found")))
-    }
-}
-
-
-
-async fn handle_get_by_discord_username(_pool: Pool, discord_username: String) -> Result<UserDto, AppError> {
-    let option = get_user_by_discord(&_pool, discord_username).await;
-    if option.is_some(){
-        Ok(UserDto::from_model(&option.unwrap()))
-    }else {
-        Err(AppError::new(AppErrorEnum::NotFoundError,String::from("User not found")))
-    }
-}
-
-async fn handle_get_by_steam_url(_pool: Pool, steam_url: String) -> Result<UserDto, AppError> {
-    let option = get_user_by_steam(&_pool, steam_url).await;
-    if option.is_some(){
-        Ok(UserDto::from_model(&option.unwrap()))
-    }else {
-        Err(AppError::new(AppErrorEnum::NotFoundError,String::from("User not found")))
-    }
-}
-async fn get_user(State(_pool): State<Pool>, claims: Claims, Path((get_type, value)): Path<(String, String)>) -> Result<Json<UserDto>, AppError> {
-
-    let permission_option = PermissionsManager::from_permissions_bitwise(&claims.permissions_bitwise);
     
-    let permission = match permission_option {
-        Some(permission) => permission,
-        None => return Err(AppError::new(AppErrorEnum::BadRequestError, String::from("Permissions bitwise broken")))
-    };
-    
-    if !permission.user_permissions.has_permission(USER_WRITE_PERMISSION) { // Yes im aware default includes the read permission
-        return Err(AppError::new(AppErrorEnum::InsufficientPermissions, String::from("InsufficientPermissions")))
+    let mut user = get_user_by_username(&_pool, username.clone()).await;
+    if user.is_some(){
+        return (StatusCode::UNAUTHORIZED, "User already exists").into_response();
     }
 
+    let mut user = UserModel::new();
+    user.username = username.clone();
 
-    if get_type.is_empty() || value.is_empty() {
-        return Err(AppError::new(AppErrorEnum::BadRequestError, String::from("MissingField")));
-    }
+    let model = user_repo::create_or_update_user(&_pool, user).await;
 
-    if get_type == "username" {
-        let result = handle_get_by_username(_pool, value).await;
-        if result.is_ok(){
-            let user = result?;
-            return Ok(Json(user));
-        }else{
-            return Ok(Json(UserDto::from_model(&UserModel::new())))
-        }
-    }
-
-    if get_type == "public_id" {
-        let id_result = Uuid::parse_str(&value);
-        if id_result.is_ok(){
-            let result = handle_get_by_public_id(_pool, id_result.unwrap()).await;
-            if result.is_ok(){
-                let user = result?;
-                return Ok(Json(user));
-            }else{
-                return Ok(Json(UserDto::from_model(&UserModel::new())))
-            }
-        }
-
-    }
-
-    if get_type == "discord_username" {
-        let result = handle_get_by_discord_username(_pool, value).await;
-        if result.is_ok(){
-            let user = result?;
-            return Ok(Json(user));
-        }else{
-            return Ok(Json(UserDto::from_model(&UserModel::new())))
-        }
-    }
-
-    if get_type == "steam_url" {
-        let result = handle_get_by_steam_url(_pool, value).await;
-        if result.is_ok(){
-            let user = result?;
-            return Ok(Json(user));
-        }else{
-            return Ok(Json(UserDto::from_model(&UserModel::new())))
-        }
-    }
-    Ok(Json(UserDto::from_model(&UserModel::new())))
-}
-#[derive(Debug, Deserialize)]
-struct EditUserPayload {
-    new_username: String,
-    new_first_name: String,
-    new_last_name: String,
-    new_discord_username: String,
-    new_steam_url: String,
+    (StatusCode::OK, Json(model)).into_response()
 }
 
 
-async fn edit_user(State(_pool): State<Pool>, claims: Claims, Json(payload): Json<EditUserPayload>) -> Result<impl IntoResponse, AppError> {
+async fn edit_user(State(_pool): State<Pool>, permissions: PermissionsManager, Json(payload): Json<EditUserPayloadDto>) -> Result<impl IntoResponse, AppError> {
 
-    let permission_option = PermissionsManager::from_permissions_bitwise(&claims.permissions_bitwise);
-    let permission = match permission_option {
-        Some(permission) => permission,
-        None => return Err(AppError::new(AppErrorEnum::BadRequestError, String::from("Permissions bitwise broken")))
-    };
-    if !permission.user_permissions.has_permission(USER_WRITE_PERMISSION){
+    let permission = permissions.user_permissions.has_permission(USER_WRITE_PERMISSION);
+    if !permission {
         return Err(AppError::new(AppErrorEnum::InsufficientPermissions, String::from("InsufficientPermissions")))
     }
 
@@ -150,7 +59,7 @@ async fn edit_user(State(_pool): State<Pool>, claims: Claims, Json(payload): Jso
         return Err(AppError::new(AppErrorEnum::BadRequestError, String::from("Missing Field")));
     }
 
-    let mut user = get_user_by_public_id(&_pool, claims.user_public_id).await
+    let mut user = get_user_by_public_id(&_pool, permissions.claims.user_public_id).await
         .ok_or(AppError::new(AppErrorEnum::BadRequestError, String::from("User not found")))?;
 
     let (username_check, discord_check, steam_check) = tokio::join!(
@@ -181,20 +90,61 @@ async fn edit_user(State(_pool): State<Pool>, claims: Claims, Json(payload): Jso
 }
 
 
+async fn get_user(State(_pool): State<Pool>, permissions: PermissionsManager, Path((get_type, value)): Path<(String, String)>) -> Result<Json<UserDto>, AppError> {
 
-#[axum::debug_handler]
-async fn create_user(
-    State(_pool): State<Pool>, Path(username): Path<String>) -> impl IntoResponse {
+    let permission_option = permissions.user_permissions.has_permission(USER_READ_PERMISSION);
 
-    let mut user = get_user_by_username(&_pool, username.clone()).await;
-    if user.is_some(){
-        return (StatusCode::UNAUTHORIZED, "User already exists").into_response();
+    if !permission_option { // Yes im aware default includes the read permission
+        return Err(AppError::new(AppErrorEnum::InsufficientPermissions, String::from("InsufficientPermissions")))
     }
 
-    let mut user = UserModel::new();
-    user.username = username.clone();
 
-    let model = user_repo::create_or_update_user(&_pool, user).await;
+    if get_type.is_empty() || value.is_empty() {
+        return Err(AppError::new(AppErrorEnum::BadRequestError, String::from("MissingField")));
+    }
 
-    (StatusCode::OK, Json(model)).into_response()
+    if get_type == "username" {
+        let result = get_by_username(_pool, value).await;
+        if result.is_ok(){
+            let user = result?;
+            return Ok(Json(user));
+        }else{
+            return Ok(Json(UserDto::from_model(&UserModel::new())))
+        }
+    }
+
+    if get_type == "public_id" {
+        let id_result = Uuid::parse_str(&value);
+        if id_result.is_ok(){
+            let result = get_by_public_id(_pool, id_result.unwrap()).await;
+            if result.is_ok(){
+                let user = result?;
+                return Ok(Json(user));
+            }else{
+                return Ok(Json(UserDto::from_model(&UserModel::new())))
+            }
+        }
+
+    }
+
+    if get_type == "discord_username" {
+        let result = get_by_discord_username(_pool, value).await;
+        if result.is_ok(){
+            let user = result?;
+            return Ok(Json(user));
+        }else{
+            return Ok(Json(UserDto::from_model(&UserModel::new())))
+        }
+    }
+
+    if get_type == "steam_url" {
+        let result = get_by_steam_url(_pool, value).await;
+        if result.is_ok(){
+            let user = result?;
+            return Ok(Json(user));
+        }else{
+            return Ok(Json(UserDto::from_model(&UserModel::new())))
+        }
+    }
+    Ok(Json(UserDto::from_model(&UserModel::new())))
 }
