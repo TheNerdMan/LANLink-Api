@@ -70,16 +70,18 @@ pub async fn get_user_by_id(
 
 pub async fn get_user_by_public_id(
     pool: &Pool,
-    public_id: Uuid,
+    public_id: &Uuid,
 ) -> Option<UserModel> {
     let conn = match create_connection(pool).await {
         Some(conn) => conn,
         None => return None,
     };
 
+    let cloned_val = public_id.clone();
+    
     let result = conn.interact(move |c| {
         users::table()
-            .filter(publicid.eq(public_id))
+            .filter(publicid.eq(cloned_val))
             .select(UserModel::as_select())
             .first(c)
     })
@@ -99,16 +101,18 @@ pub async fn get_user_by_public_id(
 
 pub async fn get_user_by_username(
     pool: &Pool,
-    req_username: String,
+    req_username: &String,
 ) -> Option<UserModel> {
     let conn = match create_connection(pool).await {
         Some(conn) => conn,
         None => return None,
     };
 
+    let cloned_val = req_username.clone();
+
     let result = conn.interact(move |c| {
         users::table()
-            .filter(username.eq(req_username))
+            .filter(username.eq(cloned_val))
             .select(UserModel::as_select())
             .first(c)
     })
@@ -128,16 +132,18 @@ pub async fn get_user_by_username(
 
 pub async fn get_user_by_discord(
     pool: &Pool,
-    req_discord: String,
+    req_discord: &String,
 ) -> Option<UserModel> {
     let conn = match create_connection(pool).await {
         Some(conn) => conn,
         None => return None,
     };
 
+    let cloned_val = req_discord.clone();
+    
     let result = conn.interact(move |c| {
         users::table()
-            .filter(discord_username.eq(req_discord))
+            .filter(discord_username.eq(cloned_val))
             .select(UserModel::as_select())
             .first(c)
     })
@@ -157,16 +163,18 @@ pub async fn get_user_by_discord(
 
 pub async fn get_user_by_steam(
     pool: &Pool,
-    req_steam: String,
+    req_steam: &String,
 ) -> Option<UserModel> {
     let conn = match create_connection(pool).await {
         Some(conn) => conn,
         None => return None,
     };
 
+    let cloned_val = req_steam.clone();
+
     let result = conn.interact(move |c| {
         users::table()
-            .filter(steam_url.eq(req_steam))
+            .filter(steam_url.eq(cloned_val))
             .select(UserModel::as_select())
             .first(c)
     })
@@ -189,9 +197,9 @@ pub async fn create_or_update_user(
     user_model: UserModel,
 ) -> Option<UserModel> {
     if user_model.id == 0 {
-        return create_user(pool, user_model).await
+        create_user(pool, user_model).await
     } else {
-        return update_user(pool, user_model).await
+        update_user(pool, user_model).await
     }
 }
 

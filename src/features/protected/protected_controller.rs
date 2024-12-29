@@ -4,9 +4,8 @@ use axum::response::IntoResponse;
 use axum::Router;
 use axum::routing::post;
 use deadpool_diesel::postgres::Pool;
-use crate::features::auth::key_creation_and_retrieval::claims::Claims;
 use crate::features::user::repos::user_repo;
-use crate::core::permissions::permission_manager::{FeaturePermissions, PermissionsManager};
+use crate::core::permissions::permission_manager::{PermissionsManager};
 use crate::core::permissions::permission_constants::admin_permissions::*;
 use crate::core::permissions::permission_constants::user_permissions::*;
 use crate::core::permissions::permission_constants::equipment_permissions::*;
@@ -103,7 +102,7 @@ async fn test(State(_pool): State<Pool>, permissions: PermissionsManager) -> imp
 async fn protected(State(_pool): State<Pool>, permissions: PermissionsManager) -> impl IntoResponse {
 
     print!("Permissions: {:?}", permissions);
-    let full_user = user_repo::get_user_by_public_id(&_pool, permissions.claims.user_public_id).await;
+    let full_user = user_repo::get_user_by_public_id(&_pool, &permissions.claims.user_public_id).await;
     match full_user {
         Some(user) => {
             // Send the protected data to the user

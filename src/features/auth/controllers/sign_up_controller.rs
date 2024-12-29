@@ -12,6 +12,7 @@ use crate::features::auth::models::auth_user_model::AuthUserModel;
 use crate::features::auth::repos::auth_repo::create_or_update_auth_user;
 use crate::features::user::models::user_model::UserModel;
 use crate::features::user::repos::user_repo;
+use crate::features::user::services::user_service;
 
 pub fn router() -> Router<Pool> {
     Router::new()
@@ -33,11 +34,19 @@ async fn username_sign_up(
     let mut user_model = UserModel::new();
     user_model.username = _user_name_sign_up.username.clone();
 
+    // check if user exists
+    let user_exists = user_service::get_by_username(&_pool,  &_user_name_sign_up.username).await;
+
+    if user_exists.is_ok() {
+        throw_error(AppError::new(AppErrorEnum::BadRequestError, String::from("User already exists")));
+        return StatusCode::BAD_REQUEST
+    }
+
     let model = user_repo::create_or_update_user(&_pool, user_model).await;
 
     match model {
         None => {
-            throw_error(AppError::new(AppErrorEnum::InternalServerError,"Could not create user".parse().unwrap()));
+            throw_error(AppError::new(AppErrorEnum::InternalServerError,String::from("Could not create user")));
             return StatusCode::INTERNAL_SERVER_ERROR
         },
         _ => {}
@@ -47,7 +56,7 @@ async fn username_sign_up(
 
     match password_hash_result {
         Err(_) => {
-            throw_error(AppError::new(AppErrorEnum::InternalServerError, "Could not generate hash".parse().unwrap()));
+            throw_error(AppError::new(AppErrorEnum::InternalServerError, String::from("Could not generate hash")));
             return StatusCode::INTERNAL_SERVER_ERROR
         },
         _ => {}
@@ -66,7 +75,7 @@ async fn username_sign_up(
 
     match auth_model {
         None => {
-            throw_error(AppError::new(AppErrorEnum::InternalServerError, "Could not create auth user".parse().unwrap()));
+            throw_error(AppError::new(AppErrorEnum::InternalServerError, String::from("Could not create auth user")));
             StatusCode::INTERNAL_SERVER_ERROR
         },
         Some(_) => StatusCode::OK
